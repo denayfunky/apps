@@ -131,6 +131,8 @@ button.secondary{background:#e8eef6;color:var(--navy)}
   font-size:17px;
   color:#713f12;
 }
+
+/* Grid bawah Nomor Meja: 3 grid (Dewasa, Anak, Suster) + 2 grid (Souvenir, Souvenir Teman Sekolah) */
 .undangan-highlight{
   background:#ecfdf5;
   border:1.5px solid #16a34a;
@@ -144,23 +146,60 @@ button.secondary{background:#e8eef6;color:var(--navy)}
   font-weight:bold;
   text-transform:uppercase;
   color:#15803d;
-  margin-bottom:6px;
+  margin-bottom:8px;
 }
-.undangan-badges{
-  display:flex;
-  flex-wrap:wrap;
-  gap:6px;
+.guest-3-grid{
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  gap:8px;
 }
-.ubadge{
-  display:inline-block;
-  padding:5px 9px;
-  border-radius:7px;
-  font-size:12px;
+.souv-2-grid{
+  display:grid;
+  grid-template-columns:repeat(2, 1fr);
+  gap:8px;
+  margin-top:8px;
+}
+.gbox-item{
+  background:#dcfce7;
+  border:1px solid #86efac;
+  border-radius:8px;
+  padding:8px;
+  text-align:center;
+  color:#14532d;
+}
+.gbox-lbl{
+  display:block;
+  font-size:11px;
   font-weight:bold;
+  text-transform:uppercase;
 }
-.ubadge.guest-b{background:#dcfce7;border:1px solid #86efac;color:#14532d}
-.ubadge.souv-b{background:var(--souv-pill-bg);border:1px solid var(--souv-bd);color:var(--souv-fg)}
-.ubadge.school-b{background:var(--school-pill-bg);border:1px solid var(--school-bd);color:var(--school-fg)}
+.gbox-val{
+  display:block;
+  font-size:16px;
+  font-weight:bold;
+  margin-top:2px;
+}
+.sbox-reg{
+  background:var(--souv-bg);
+  border:1.5px solid var(--souv-bd);
+  border-radius:8px;
+  padding:8px 10px;
+  text-align:center;
+  color:var(--souv-fg);
+}
+.sbox-reg .gbox-lbl{color:var(--souv-fg)}
+.sbox-reg .gbox-val{color:#1e3a8a}
+
+.sbox-sch{
+  background:var(--school-bg);
+  border:1.5px solid var(--school-bd);
+  border-radius:8px;
+  padding:8px 10px;
+  text-align:center;
+  color:var(--school-fg);
+}
+.sbox-sch .gbox-lbl{color:var(--school-fg)}
+.sbox-sch .gbox-val{color:#78350f}
 
 /* Warna pembeda Souvenir vs Souvenir Teman Sekolah */
 .souvenir-split{
@@ -702,7 +741,7 @@ function processCode(rawCode, overrideData = null){
     </div>
    `;
   } else if(isInitialCheckinSuccess){
-   // Highlight Nama, ID_QR di bawah Nama Tamu, No. Telepon, Kategori, No Meja dan Data Undangan saat Check-in berhasil
+   // Di bawah Nomor Meja: Dewasa, Anak, Suster (3 grid), menyusul di bawahnya Souvenir & Souvenir Teman Sekolah (2 grid)
    d += `
     <div class="checkin-highlight-card">
       <div class="highlight-grid">
@@ -727,14 +766,32 @@ function processCode(rawCode, overrideData = null){
           <div class="hl-val">${esc(tableDisplay)}</div>
         </div>
       </div>
+
       <div class="undangan-highlight">
-        <div class="uh-title">Data Undangan</div>
-        <div class="undangan-badges">
-          <span class="ubadge guest-b">Dewasa: ${esc(adultsVal)}</span>
-          <span class="ubadge guest-b">Anak: ${esc(childrenVal)}</span>
-          <span class="ubadge guest-b">Suster: ${esc(nanniesVal)}</span>
-          <span class="ubadge souv-b">Souvenir: ${esc(souvVal)}</span>
-          <span class="ubadge school-b">Souvenir Teman Sekolah: ${esc(souvSchoolVal)}</span>
+        <div class="uh-title">Rincian Tamu &amp; Souvenir</div>
+        <div class="guest-3-grid">
+          <div class="gbox-item">
+            <span class="gbox-lbl">Dewasa</span>
+            <span class="gbox-val">${esc(adultsVal)}</span>
+          </div>
+          <div class="gbox-item">
+            <span class="gbox-lbl">Anak</span>
+            <span class="gbox-val">${esc(childrenVal)}</span>
+          </div>
+          <div class="gbox-item">
+            <span class="gbox-lbl">Suster</span>
+            <span class="gbox-val">${esc(nanniesVal)}</span>
+          </div>
+        </div>
+        <div class="souv-2-grid">
+          <div class="sbox-reg">
+            <span class="gbox-lbl">Souvenir</span>
+            <span class="gbox-val">${esc(souvVal)}</span>
+          </div>
+          <div class="sbox-sch">
+            <span class="gbox-lbl">Souvenir Teman Sekolah</span>
+            <span class="gbox-val">${esc(souvSchoolVal)}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -745,16 +802,10 @@ function processCode(rawCode, overrideData = null){
     </label>
     <div id="checkinActualForm" class="actual-box" style="display:none;">
       <b>Input Jumlah Kehadiran Aktual (Tidak Sesuai):</b>
-      <div class="row">
+      <div class="guest-3-grid" style="margin-top:8px;">
         <div><label>Dewasa</label><input type="number" id="actAdults" min="0" step="1" value="${esc(adultsVal)}"></div>
         <div><label>Anak</label><input type="number" id="actChildren" min="0" step="1" value="${esc(childrenVal)}"></div>
-      </div>
-      <div class="row">
         <div><label>Suster</label><input type="number" id="actNannies" min="0" step="1" value="${esc(nanniesVal)}"></div>
-        <div><label class="field-lbl-souv">Souvenir</label><input type="number" class="input-souv" id="actSouvenir" min="0" step="1" value="${esc(souvVal)}"></div>
-      </div>
-      <div class="row">
-        <div class="full-span" style="grid-column:1 / -1;"><label class="field-lbl-school">Qty Souvenir Teman Sekolah</label><input type="number" class="input-school" id="actSouvenirSchool" min="0" step="1" value="${esc(souvSchoolVal)}"></div>
       </div>
     </div>
     <div class="actual-box locked-box" style="margin-top:10px;">
@@ -850,13 +901,11 @@ function saveCheckin(code){
  const adults = isSesuai ? undefined : (document.getElementById('actAdults') ? toNonNegNumber(document.getElementById('actAdults').value, 0) : undefined);
  const children = isSesuai ? undefined : (document.getElementById('actChildren') ? toNonNegNumber(document.getElementById('actChildren').value, 0) : undefined);
  const nannies = isSesuai ? undefined : (document.getElementById('actNannies') ? toNonNegNumber(document.getElementById('actNannies').value, 0) : undefined);
- const qtySouvenir = isSesuai ? undefined : (document.getElementById('actSouvenir') ? toNonNegNumber(document.getElementById('actSouvenir').value, 0) : undefined);
- const qtySouvenirSchool = isSesuai ? undefined : (document.getElementById('actSouvenirSchool') ? toNonNegNumber(document.getElementById('actSouvenirSchool').value, 0) : undefined);
  const angpao = document.getElementById('giftAngpao') ? toNonNegNumber(document.getElementById('giftAngpao').value, 0) : 0;
  const hadiah = document.getElementById('giftHadiah') ? toNonNegNumber(document.getElementById('giftHadiah').value, 0) : 0;
  checkedInSessionIds.add(normalizeQrCode(code).toUpperCase());
  busy = false;
- processCode(code, { adults, children, nannies, qtySouvenir, qtySouvenirSchool, angpao, hadiah, isUpdate: true });
+ processCode(code, { adults, children, nannies, angpao, hadiah, isUpdate: true });
 }
 
 function saveSouvenir(code){

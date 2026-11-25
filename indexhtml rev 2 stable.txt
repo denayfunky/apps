@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Guest Management</title>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+:root{--navy:#17365D;--green:#16834a;--red:#b42318;--bg:#f3f6fa}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:#172033;font-family:Arial,sans-serif}
+header{background:var(--navy);color:white;padding:18px 16px}
+header h1{font-size:19px;margin:0 0 5px}
+header p{font-size:12px;margin:0;opacity:.85}
+main{max-width:560px;margin:16px auto;padding:0 12px 28px}
+.card{background:white;border-radius:14px;padding:16px;margin-bottom:13px;box-shadow:0 2px 10px #13294b12}
+label{display:block;font-size:13px;font-weight:bold;margin:10px 0 6px}
+input[type="text"],input[type="number"],input:not([type]),select{width:100%;padding:13px;border:1px solid #cbd5e1;border-radius:9px;font-size:16px;background:white}
+button{border:0;background:var(--navy);color:white;padding:14px 16px;border-radius:10px;font-size:15px;font-weight:bold;width:100%;margin-top:12px;cursor:pointer}
+button:disabled{opacity:.55;cursor:not-allowed}
+button.secondary{background:#e8eef6;color:var(--navy)}
+#reader{width:100%;overflow:hidden;border-radius:12px;min-height:40px}
+.hint{font-size:12px;color:#64748b;line-height:1.5}
+#result{display:none;border-radius:12px;padding:16px;margin-top:12px}
+#result.good{display:block;background:#e5f5eb;border:1px solid #9ad3ae;color:#14532d}
+#result.bad{display:block;background:#fff0ed;border:1px solid #f2b4aa;color:#8a1c13}
+#result.info{display:block;background:#eff6ff;border:1px solid #93c5fd;color:#1e3a8a}
+#result h2{margin:0 0 7px;font-size:18px}
+#result p{margin:6px 0;font-size:14px;overflow-wrap:anywhere}
+.inv-badge{display:inline-block;background:var(--navy);color:#ffffff;font-size:15px;font-weight:bold;padding:6px 12px;border-radius:8px;margin:4px 0 8px;letter-spacing:.5px}
+
+.info-stack{display:flex;flex-direction:column;gap:8px;margin:8px 0 12px}
+.box-primary{background:#17365D;color:#ffffff;border-radius:10px;padding:11px 14px;font-size:16px;font-weight:bold;line-height:1.35;letter-spacing:.2px;box-shadow:0 2px 6px rgba(23,54,93,.18)}
+.grid-two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid-three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.box-qty-adult{background:#15803d;color:#ffffff;border-radius:9px;padding:10px 8px;font-size:13px;font-weight:bold;line-height:1.35;text-align:center;box-shadow:0 1px 4px rgba(21,128,61,.18)}
+.box-qty-child{background:#be185d;color:#ffffff;border-radius:9px;padding:10px 8px;font-size:13px;font-weight:bold;line-height:1.35;text-align:center;box-shadow:0 1px 4px rgba(190,24,93,.18)}
+.box-qty-nanny{background:#4338ca;color:#ffffff;border-radius:9px;padding:10px 8px;font-size:13px;font-weight:bold;line-height:1.35;text-align:center;box-shadow:0 1px 4px rgba(67,56,202,.18)}
+.box-souv-main{background:#0f766e;color:#ffffff;border-radius:10px;padding:12px 14px;font-size:15px;font-weight:bold;line-height:1.35;text-align:center;box-shadow:0 2px 6px rgba(15,118,110,.2)}
+.box-souv-school{background:#c2410c;color:#ffffff;border-radius:10px;padding:12px 14px;font-size:15px;font-weight:bold;line-height:1.35;text-align:center;box-shadow:0 2px 6px rgba(194,65,12,.2)}
+
+.mode{display:inline-block;border-radius:99px;background:#e8eef6;color:var(--navy);padding:6px 10px;font-size:12px;font-weight:bold}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.api{font-size:11px;color:#64748b;overflow-wrap:anywhere}
+.actual-box{background:#fff;border:1px solid #9ad3ae;padding:12px;border-radius:8px;margin-top:10px}
+.actual-box.locked-box{border-color:#d97706;box-shadow:0 0 0 2px #fef3c7}
+.actual-box label{font-size:11px;margin:4px 0 2px;color:#14532d}
+.actual-box input[type="number"],.actual-box input[type="text"],.actual-box select{padding:8px;font-size:14px}
+.lock-note{background:#fffbeb;border:1px solid #f59e0b;color:#92400e;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:bold;margin-top:8px}
+.check-row{display:flex;align-items:center;gap:10px;background:#f0fdf4;border:1px solid #86efac;padding:10px 12px;border-radius:8px;margin-top:10px;cursor:pointer}
+.check-row input[type="checkbox"]{width:20px;height:20px;accent-color:var(--green);margin:0;cursor:pointer;flex-shrink:0}
+.check-row span{font-size:14px;font-weight:bold;color:#14532d}
+.summary-pill{background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:8px 10px;font-size:13px;color:#1e293b;margin-top:8px}
+</style>
+</head>
+<body>
+<header>
+<h1>Grace and Irene</h1>
+<p>Birthday Louis • Marqen Hotel 28 November 2026</p>
+</header>
+<main>
+<section class="card">
+<span class="mode" id="modeLabel">CHECK-IN TAMU</span>
+<label>Mode transaksi</label>
+<select id="mode" onchange="changeMode()">
+<option value="checkin">Check-in tamu</option>
+<option value="souvenir">Penukaran souvenir</option>
+</select>
+<label>Nama petugas</label>
+<input id="operator" placeholder="Contoh: Resepsionis 1" autocomplete="name">
+</section>
+
+<section class="card">
+<label>Kamera</label>
+<select id="cameraSelect">
+<option value="">Kamera utama / belakang</option>
+</select>
+<div id="reader"></div>
+<p class="hint" id="cameraHint">Izinkan akses kamera. Gunakan Chrome dan tautan HTTPS.</p>
+<div class="row">
+<button id="btnStartScan" onclick="startScanner()">Mulai kamera</button>
+<button id="btnStopScan" class="secondary" onclick="stopScanner()">Hentikan</button>
+</div>
+<label>Input kode secara manual (opsional)</label>
+<input id="manualCode" placeholder="Tempel / ketik ID QR" onkeydown="if(event.key==='Enter'){event.preventDefault();manualSubmit();}">
+<button class="secondary" onclick="manualSubmit()">Proses kode manual</button>
+</section>
+
+<section id="result"></section>
+
+<section class="card">
+<p class="hint">Grace and Irene 2026.</p>
+<p class="api">API: <span id="apiStatus">Menghubungkan…</span></p>
+</section>
+</main>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbyo0iCqvaG5-sSa_SuF_tRdKVK1M4WlZujG-VNs9uizXnDuYw9DqsZzGzScQTI74nVt2A/exec';
+
+let scanner = null;
+let busy = false;
+let scanLock = false; // Mengunci scanner agar tidak membaca ulang otomatis setelah 1 scan sukses
+let pendingConfirmRequired = false;
+let lastProcessedCode = '';
+let lastProcessedAt = 0;
+let cameras = [];
+const params = new URLSearchParams(location.search);
+
+function toNonNegNumber(val, fallback = 0){
+ if(val === undefined || val === null || String(val).trim() === '') return fallback;
+ const n = parseInt(String(val).replace(/[^\d-]/g, ''), 10);
+ if(isNaN(n) || n < 0) return fallback;
+ return n;
+}
+
+function pickFirstValue(obj, keys, fallback = ''){
+ if(!obj || typeof obj !== 'object') return fallback;
+ for(const k of keys){
+  if(obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== ''){
+   return obj[k];
+  }
+ }
+ const normMap = {};
+ Object.keys(obj).forEach(key => {
+  const norm = String(key).toLowerCase().replace(/[^a-z0-9]/g, '');
+  normMap[norm] = obj[key];
+ });
+ for(const k of keys){
+  const norm = String(k).toLowerCase().replace(/[^a-z0-9]/g, '');
+  if(normMap[norm] !== undefined && normMap[norm] !== null && String(normMap[norm]).trim() !== ''){
+   return normMap[norm];
+  }
+ }
+ return fallback;
+}
+
+function bindNumberSanitizers(){
+ document.querySelectorAll('input[type="number"]').forEach(inp => {
+  if(inp.dataset.sanitizedBound) return;
+  inp.dataset.sanitizedBound = '1';
+  inp.addEventListener('input', () => {
+   if(inp.value === '') return;
+   const n = parseInt(inp.value, 10);
+   if(isNaN(n) || n < 0) inp.value = 0;
+  });
+  inp.addEventListener('blur', () => {
+   inp.value = toNonNegNumber(inp.value, 0);
+  });
+ });
+}
+
+function isValidApiUrl(url){
+ return /^https:\/\/script\.google\.com\/macros\/s\/[a-zA-Z0-9_-]+\/exec(?:\?.*)?$/.test(String(url || '').trim());
+}
+
+function getBaseExecUrl(){
+ return String(API_URL || '').trim().split('?')[0];
+}
+
+function currentMode(){
+ return document.getElementById('mode').value;
+}
+
+function changeMode(){
+ if(pendingConfirmRequired){
+  document.getElementById('mode').value = 'checkin';
+  showResult(
+   'bad',
+   'Wajib Simpan Konfirmasi Kehadiran',
+   '<p>Tekan tombol <b>"Simpan Konfirmasi Kehadiran"</b> terlebih dahulu sebelum mengganti mode atau memindai tamu berikutnya.</p>'
+  );
+  return;
+ }
+ document.getElementById('modeLabel').textContent =
+  currentMode() === 'souvenir' ? 'PENUKARAN SOUVENIR' : 'CHECK-IN TAMU';
+ showResult('', '', '');
+}
+
+function esc(s){
+ return String(s ?? '').replace(/[&<>"']/g, c => ({
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;'
+ }[c]));
+}
+
+function showResult(kind, title, detail){
+ const b = document.getElementById('result');
+ if(!kind){
+  b.style.display = 'none';
+  b.className = '';
+  b.innerHTML = '';
+  return;
+ }
+ b.style.display = 'block';
+ b.className = kind;
+ b.innerHTML = '<h2>' + esc(title) + '</h2>' + detail;
+ bindNumberSanitizers();
+ b.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+}
+
+async function lockAndStopScanner(){
+ scanLock = true;
+ try{
+  if(scanner && typeof scanner.getState === 'function'){
+   const st = scanner.getState();
+   if(st === 2 || st === 3){
+    await scanner.stop();
+   }
+  } else if(scanner && scanner.isScanning){
+   await scanner.stop();
+  }
+ }catch(e){}
+}
+
+function parseApiTextResponse_(txt){
+ const clean = String(txt || '').trim();
+ const jsonpMatch = clean.match(/^[A-Za-z_$][0-9A-Za-z_$\.]*\((.*)\);?$/s);
+ return JSON.parse(jsonpMatch ? jsonpMatch[1] : clean);
+}
+
+function runJsonpFallback(payload, resolve, reject, lastErr){
+ const callback = 'gasCallback_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+ const script = document.createElement('script');
+ script.async = true;
+ let finished = false;
+
+ const timer = setTimeout(() => {
+  finish(new Error('Timeout (' + (lastErr || 'JSONP') + ')'));
+ }, 10000);
+
+ function finish(err, data){
+  if(finished) return;
+  finished = true;
+  clearTimeout(timer);
+  try{ delete window[callback]; }catch(e){ window[callback] = undefined; }
+  if(script.parentNode) script.remove();
+  err ? reject(err) : resolve(data);
+ }
+
+ window[callback] = data => finish(null, data);
+
+ const query = new URLSearchParams({
+  ...payload,
+  callback,
+  _: Date.now().toString()
+ });
+
+ script.onerror = () => {
+  finish(new Error('Gagal memuat skrip (cek ad-blocker/DNS/jaringan HP).'));
+ };
+
+ script.src = getBaseExecUrl() + '?' + query.toString();
+ document.head.appendChild(script);
+}
+
+function callAppsScript(payload){
+ return new Promise((resolve, reject) => {
+  if(!isValidApiUrl(API_URL)){
+   reject(new Error('API_URL belum diatur ke URL Web App Google Apps Script (/exec) yang valid.'));
+   return;
+  }
+
+  const query = new URLSearchParams({
+   ...payload,
+   _: Date.now().toString()
+  });
+  const targetUrl = getBaseExecUrl() + '?' + query.toString();
+
+  if(typeof fetch === 'function'){
+   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+   const fetchTimer = setTimeout(() => {
+    if(controller) controller.abort();
+   }, 8000);
+
+   fetch(targetUrl, {
+    method: 'GET',
+    redirect: 'follow',
+    cache: 'no-store',
+    signal: controller ? controller.signal : undefined
+   })
+   .then(r => {
+    clearTimeout(fetchTimer);
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    return r.text();
+   })
+   .then(txt => {
+    resolve(parseApiTextResponse_(txt));
+   })
+   .catch(err => {
+    clearTimeout(fetchTimer);
+    runJsonpFallback(payload, resolve, reject, err && err.message ? err.message : 'Fetch gagal');
+   });
+   return;
+  }
+
+  runJsonpFallback(payload, resolve, reject, 'Fetch tidak tersedia');
+ });
+}
+
+function normalizeQrCode(value){
+ let code = String(value ?? '').normalize('NFKC')
+  .replace(/[\u200B-\u200D\uFEFF]/g, '')
+  .replace(/\s+/g, '')
+  .trim();
+
+ if(/^https?:\/\//i.test(code)){
+  try{
+   const u = new URL(code);
+   const fromUrl = u.searchParams.get('code') || u.searchParams.get('id') || u.searchParams.get('qr');
+   if(fromUrl) code = fromUrl.trim();
+  }catch(e){}
+ }
+ return code.toUpperCase();
+}
+
+function toggleCheckinForm(){
+ const chk = document.getElementById('chkSesuai');
+ const form = document.getElementById('checkinActualForm');
+ if(!chk || !form) return;
+ form.style.display = chk.checked ? 'none' : 'block';
+}
+
+function toggleSouvenirForm(){
+ const chk = document.getElementById('chkSouvSesuai');
+ const form = document.getElementById('souvActualForm');
+ if(!chk || !form) return;
+ form.style.display = chk.checked ? 'none' : 'block';
+}
+
+function buildGuestBadgesHtml(g, fallbackCode, res){
+ const src = (g && typeof g === 'object') ? g : {};
+ const root = (res && typeof res === 'object') ? res : {};
+ const qrId = pickFirstValue(src, ['idQr', 'qrId', 'id_qr', 'idQR', 'id', 'code'], pickFirstValue(root, ['idQr', 'qrId', 'id_qr'], fallbackCode || '-'));
+ const invNo = pickFirstValue(src, ['invitationNumber', 'noUndangan', 'nomorUndangan', 'invNo', 'invitation_number'], '-');
+ const tableNo = pickFirstValue(src, ['tableNumber', 'noMeja', 'nomorMeja', 'table', 'table_number'], '-');
+ const guestName = pickFirstValue(src, ['name', 'nama', 'guestName', 'namaTamu'], '-');
+ const phone = pickFirstValue(src, ['phone', 'noTelepon', 'telepon', 'hp', 'noHp', 'whatsapp'], '-');
+ const category = pickFirstValue(src, ['category', 'kategori'], '-');
+ const adults = toNonNegNumber(pickFirstValue(src, ['adults', 'dewasa', 'qtyDewasa', 'qty_dewasa'], 0), 0);
+ const children = toNonNegNumber(pickFirstValue(src, ['children', 'anak', 'qtyAnak', 'qty_anak'], 0), 0);
+ const nannies = toNonNegNumber(pickFirstValue(src, ['nannies', 'suster', 'qtySuster', 'qty_suster'], 0), 0);
+ const qtySouvenir = toNonNegNumber(pickFirstValue(src, ['qtySouvenir', 'souvenir', 'qty_souvenir'], 0), 0);
+ const qtySouvenirSchoolRaw = pickFirstValue(
+  src,
+  [
+   'qtySouvenirTemanSekolah',
+   'qtySouvenirSchool',
+   'souvenirTemanSekolah',
+   'souvenirSchool',
+   'qty_souvenir_teman_sekolah',
+   'qty_souvenir_school',
+   'temanSekolah'
+  ],
+  pickFirstValue(root, ['qtySouvenirTemanSekolah', 'qtySouvenirSchool', 'souvenirTemanSekolah'], 0)
+ );
+ const qtySouvenirSchool = toNonNegNumber(qtySouvenirSchoolRaw, 0);
+
+ return `
+  <div class="info-stack">
+   <div class="box-primary">ID QR: ${esc(qrId)}</div>
+   <div class="box-primary">No. Undangan: ${esc(invNo)}</div>
+   <div class="box-primary">No. Meja: ${esc(tableNo)}</div>
+   <div class="box-primary">Nama: ${esc(guestName)}</div>
+   <div class="box-primary">No. Telepon: ${esc(phone)}</div>
+   <div class="box-primary">Kategori: ${esc(category)}</div>
+
+   <div class="grid-three">
+    <div class="box-qty-adult">Qty Dewasa: ${esc(adults)}</div>
+    <div class="box-qty-child">Qty Anak: ${esc(children)}</div>
+    <div class="box-qty-nanny">Qty Suster: ${esc(nannies)}</div>
+   </div>
+
+   <div class="grid-two">
+    <div class="box-souv-main">Qty Souvenir: ${esc(qtySouvenir)}</div>
+    <div class="box-souv-school">Qty Souvenir Teman Sekolah: ${esc(qtySouvenirSchool)}</div>
+   </div>
+  </div>
+ `;
+}
+
+async function processCode(rawCode, overrideData = null){
+ const code = normalizeQrCode(rawCode);
+ const isUpdate = Boolean(overrideData && overrideData.isUpdate);
+
+ if(busy) return;
+
+ if(pendingConfirmRequired && !isUpdate){
+  await lockAndStopScanner();
+  showResult(
+   'bad',
+   'Wajib Simpan Konfirmasi Kehadiran',
+   '<p>Silakan tekan tombol <b>"Simpan Konfirmasi Kehadiran"</b> terlebih dahulu sebelum memindai tamu berikutnya.</p>'
+  );
+  return;
+ }
+
+ if(!code){
+  showResult('bad', 'Kode QR kosong', '<p>QR terbaca, tetapi tidak berisi kode.</p>');
+  return;
+ }
+
+ const operator = document.getElementById('operator').value.trim();
+ if(!operator){
+  await lockAndStopScanner();
+  showResult(
+   'bad',
+   'Isi nama resepsionis',
+   '<p>Masukkan nama resepsionis terlebih dahulu, lalu klik tombol di bawah untuk melanjutkan scan.</p>' +
+   '<button onclick="resumeScanner()" style="background:var(--navy); margin-top:12px;">Lanjutkan Scan</button>'
+  );
+  return;
+ }
+
+ // Cegah pemindaian otomatis untuk kode yang sama dalam 6 detik
+ const now = Date.now();
+ if(!isUpdate && code === lastProcessedCode && (now - lastProcessedAt) < 6000){
+  return;
+ }
+
+ busy = true;
+ if(!isUpdate){
+  lastProcessedCode = code;
+  lastProcessedAt = now;
+  await lockAndStopScanner();
+ }
+
+ showResult('info', 'Memproses QR…', '<p>Kode: <b>' + esc(code) + '</b> sedang dikirim ke server.</p>');
+
+ const payload = {
+  action: 'scan',
+  code,
+  mode: currentMode(),
+  operator,
+  userAgent: navigator.userAgent,
+  isUpdate: isUpdate ? 'true' : 'false'
+ };
+
+ if(overrideData){
+  if(overrideData.adults !== undefined) payload.adults = String(toNonNegNumber(overrideData.adults, 0));
+  if(overrideData.children !== undefined) payload.children = String(toNonNegNumber(overrideData.children, 0));
+  if(overrideData.nannies !== undefined) payload.nannies = String(toNonNegNumber(overrideData.nannies, 0));
+  if(overrideData.qtySouvenir !== undefined) payload.qtySouvenir = String(toNonNegNumber(overrideData.qtySouvenir, 0));
+  if(overrideData.qtySouvenirTemanSekolah !== undefined) payload.qtySouvenirTemanSekolah = String(toNonNegNumber(overrideData.qtySouvenirTemanSekolah, 0));
+  if(overrideData.penukar !== undefined) payload.penukar = overrideData.penukar;
+  if(overrideData.angpao !== undefined && currentMode() === 'checkin') payload.angpao = String(toNonNegNumber(overrideData.angpao, 0));
+  if(overrideData.hadiah !== undefined && currentMode() === 'checkin') payload.hadiah = String(toNonNegNumber(overrideData.hadiah, 0));
+ }
+
+ callAppsScript(payload).then(res => {
+  const g = res.guest || {};
+  let d = '';
+
+  const alreadyCheckedIn = Boolean(
+   res.alreadyCheckedIn || res.alreadyCheckin || res.isDuplicate ||
+   /sudah.*check[\s-]*in/i.test(String(res.message || '') + ' ' + String(res.status || ''))
+  );
+  const isInitialCheckinSuccess = Boolean(g.name && currentMode() === 'checkin' && res.ok && !isUpdate && !alreadyCheckedIn);
+  if(isInitialCheckinSuccess){
+   pendingConfirmRequired = true;
+  } else if((isUpdate || alreadyCheckedIn) && res.ok){
+   pendingConfirmRequired = false;
+  }
+
+  if(currentMode() === 'checkin' && (g.name || g.invitationNumber || g.idQr || g.qrId)){
+   d += buildGuestBadgesHtml(g, code, res);
+  } else {
+   if(g.invitationNumber){
+    d += '<div class="inv-badge">Nomor Undangan: ' + esc(g.invitationNumber) + '</div>';
+   }
+   if(g.name) d += '<p><b>Nama tamu:</b> ' + esc(g.name) + '</p>';
+   if(g.phone) d += '<p><b>No. telepon:</b> ' + esc(g.phone) + '</p>';
+   if(g.category) d += '<p><b>Kategori:</b> ' + esc(g.category) + '</p>';
+  }
+
+  if(isInitialCheckinSuccess){
+   d += `
+    <label class="check-row" for="chkSesuai">
+      <input type="checkbox" id="chkSesuai" checked onchange="toggleCheckinForm()">
+      <span>Data kehadiran sesuai undangan (Otomatis masuk ke sheet Guest_Checkin)</span>
+    </label>
+    <div id="checkinActualForm" class="actual-box" style="display:none;">
+      <b>Input Jumlah Kehadiran Aktual (Tidak Sesuai):</b>
+      <div class="row-3">
+        <div><label>Dewasa</label><input type="number" id="actAdults" min="0" step="1" value="${esc(toNonNegNumber(g.adults, 0))}"></div>
+        <div><label>Anak</label><input type="number" id="actChildren" min="0" step="1" value="${esc(toNonNegNumber(g.children, 0))}"></div>
+        <div><label>Suster</label><input type="number" id="actNannies" min="0" step="1" value="${esc(toNonNegNumber(g.nannies, 0))}"></div>
+      </div>
+    </div>
+    <div class="actual-box locked-box" style="margin-top:10px;">
+      <b>Angpao &amp; Hadiah:</b>
+      <div class="row">
+        <div><label>Angpao</label><input type="number" id="giftAngpao" min="0" step="1" value="0"></div>
+        <div><label>Hadiah</label><input type="number" id="giftHadiah" min="0" step="1" value="0"></div>
+      </div>
+      <button id="btnSaveCheckinConfirm" onclick="saveCheckin('${esc(code)}')" style="background:var(--green); margin-top:12px;">Simpan Konfirmasi Kehadiran</button>
+      <div class="lock-note">Kamera dikunci &amp; tombol "Scan Tamu Berikutnya" aktif setelah "Simpan Konfirmasi Kehadiran" ditekan.</div>
+    </div>
+   `;
+  }
+
+  if(g.name && currentMode() === 'souvenir' && res.ok && !isUpdate){
+   d += `
+    <div class="summary-pill">
+      <b>Jatah Souvenir:</b> <b>${esc(toNonNegNumber(g.qtySouvenir, 0))}</b> pcs (a.n. ${esc(g.name)}${g.invitationNumber ? ' • No. Undangan: ' + esc(g.invitationNumber) : ''})
+    </div>
+    <label class="check-row" for="chkSouvSesuai">
+      <input type="checkbox" id="chkSouvSesuai" checked onchange="toggleSouvenirForm()">
+      <span>Pengambilan souvenir sesuai</span>
+    </label>
+    <div id="souvActualForm" class="actual-box" style="display:none;">
+      <b>Input Detail Penukaran Aktual (Tidak Sesuai / Diwakilkan):</b>
+      <label>Nama Penukar</label>
+      <input type="text" id="actPenukar" value="${esc(g.name)}" placeholder="Nama pengambil">
+      <label>Jumlah Souvenir</label>
+      <input type="number" id="actSouvQty" min="0" step="1" value="${esc(toNonNegNumber(g.qtySouvenir, 0))}">
+      <button id="btnSaveSouvConfirm" onclick="saveSouvenir('${esc(code)}')" style="background:var(--green); margin-top:8px; padding:10px;">Simpan Konfirmasi Kehadiran</button>
+    </div>
+   `;
+  }
+
+  d += '<p><b>Waktu server:</b> ' + esc(res.timestamp || '') + '</p>';
+  if(res.message) d += '<p>' + esc(res.message) + '</p>';
+
+  if(!pendingConfirmRequired){
+   d += '<button id="btnNextGuest" onclick="resumeScanner()" style="background:var(--green); margin-top:14px;">🔄 Scan Tamu Berikutnya</button>';
+  }
+
+  const resultTitle = alreadyCheckedIn
+   ? (res.status || 'SUDAH CHECK-IN SEBELUMNYA')
+   : (res.ok ? 'BERHASIL' : (res.status || 'GAGAL'));
+  const resultKind = alreadyCheckedIn ? 'info' : (res.ok ? 'good' : 'bad');
+  showResult(resultKind, resultTitle, d || '<p>Respons server kosong.</p>');
+  document.getElementById('manualCode').value = '';
+  busy = false;
+ }).catch(err => {
+  showResult(
+   'bad',
+   'Gagal menghubungi server',
+   '<p>' + esc(err.message || err) + '</p><button onclick="resumeScanner()" style="background:var(--red); margin-top:14px;">Coba Lagi</button>'
+  );
+  busy = false;
+ });
+}
+
+function saveCheckin(code){
+ if(busy) return;
+ const btn = document.getElementById('btnSaveCheckinConfirm');
+ if(btn) btn.disabled = true;
+ const chk = document.getElementById('chkSesuai');
+ const isSesuai = chk ? chk.checked : true;
+ const adults = isSesuai ? undefined : (document.getElementById('actAdults') ? toNonNegNumber(document.getElementById('actAdults').value, 0) : undefined);
+ const children = isSesuai ? undefined : (document.getElementById('actChildren') ? toNonNegNumber(document.getElementById('actChildren').value, 0) : undefined);
+ const nannies = isSesuai ? undefined : (document.getElementById('actNannies') ? toNonNegNumber(document.getElementById('actNannies').value, 0) : undefined);
+ const angpao = document.getElementById('giftAngpao') ? toNonNegNumber(document.getElementById('giftAngpao').value, 0) : 0;
+ const hadiah = document.getElementById('giftHadiah') ? toNonNegNumber(document.getElementById('giftHadiah').value, 0) : 0;
+ processCode(code, { adults, children, nannies, angpao, hadiah, isUpdate: true });
+}
+
+function saveSouvenir(code){
+ if(busy) return;
+ const btn = document.getElementById('btnSaveSouvConfirm');
+ if(btn) btn.disabled = true;
+ const penukar = document.getElementById('actPenukar').value;
+ const qtySouvenir = toNonNegNumber(document.getElementById('actSouvQty').value, 0);
+ processCode(code, { penukar, qtySouvenir, isUpdate: true });
+}
+
+function onScanSuccess(decoded){
+ if(busy || scanLock || pendingConfirmRequired) return;
+ const code = normalizeQrCode(decoded);
+ if(!code) return;
+ const now = Date.now();
+ if(code === lastProcessedCode && (now - lastProcessedAt) < 6000) return;
+ processCode(code);
+}
+
+async function resumeScanner(){
+ if(pendingConfirmRequired){
+  showResult(
+   'bad',
+   'Wajib Simpan Konfirmasi Kehadiran',
+   '<p>Tekan tombol <b>"Simpan Konfirmasi Kehadiran"</b> terlebih dahulu sebelum scan tamu berikutnya.</p>'
+  );
+  return;
+ }
+ busy = false;
+ scanLock = false;
+ lastProcessedCode = '';
+ lastProcessedAt = 0;
+ showResult('', '', '');
+ await startScanner();
+}
+
+async function refreshCameras(){
+ try{
+  if(!window.Html5Qrcode) return;
+  cameras = await Html5Qrcode.getCameras();
+  const sel = document.getElementById('cameraSelect');
+  sel.innerHTML = '';
+  cameras.forEach((c, i) => {
+   const o = document.createElement('option');
+   o.value = c.id;
+   o.textContent = c.label || ('Kamera ' + (i + 1));
+   sel.appendChild(o);
+  });
+  const back = cameras.find(c => /back|rear|environment|belakang/i.test(c.label));
+  if(back) sel.value = back.id;
+ }catch(e){}
+}
+
+async function startScanner(){
+ if(pendingConfirmRequired){
+  showResult(
+   'bad',
+   'Wajib Simpan Konfirmasi Kehadiran',
+   '<p>Tekan tombol <b>"Simpan Konfirmasi Kehadiran"</b> terlebih dahulu sebelum memulai scan baru.</p>'
+  );
+  return;
+ }
+ if(!window.Html5Qrcode){
+  showResult('bad', 'Library scanner tidak termuat', '<p>Periksa koneksi internet untuk memuat html5-qrcode.</p>');
+  return;
+ }
+ try{
+  if(!scanner) scanner = new Html5Qrcode('reader');
+  if(typeof scanner.getState === 'function' && scanner.getState() === 2){
+   scanLock = false;
+   return;
+  }
+  scanLock = false;
+  const id = document.getElementById('cameraSelect').value;
+  await scanner.start(
+   id || { facingMode: 'environment' },
+   { fps: 15, qrbox: { width: 240, height: 240 } },
+   onScanSuccess,
+   () => {}
+  );
+  document.getElementById('cameraHint').textContent = 'Kamera aktif. Arahkan QR ke kotak scan.';
+ }catch(e){
+  showResult('bad', 'Kamera tidak dapat dibuka', '<p>' + esc(e.message || e) + '</p>');
+ }
+}
+
+async function stopScanner(){
+ scanLock = true;
+ try{
+  if(scanner && typeof scanner.getState === 'function'){
+   if(scanner.getState() === 2 || scanner.getState() === 3){
+    await scanner.stop();
+   }
+  } else if(scanner && scanner.isScanning){
+   await scanner.stop();
+  }
+ }catch(e){}
+ document.getElementById('cameraHint').textContent = 'Kamera dihentikan. Klik "Mulai kamera" atau "Scan Tamu Berikutnya" untuk memindai.';
+}
+
+function manualSubmit(){
+ if(pendingConfirmRequired){
+  showResult(
+   'bad',
+   'Wajib Simpan Konfirmasi Kehadiran',
+   '<p>Tekan tombol <b>"Simpan Konfirmasi Kehadiran"</b> terlebih dahulu sebelum memproses kode lain.</p>'
+  );
+  return;
+ }
+ const c = document.getElementById('manualCode').value.trim();
+ if(!c){
+  showResult('bad', 'Kode kosong', '<p>Masukkan ID QR.</p>');
+  return;
+ }
+ processCode(c);
+}
+
+function checkApiConnection(){
+ const statusEl = document.getElementById('apiStatus');
+ if(!isValidApiUrl(API_URL)){
+  statusEl.textContent = 'Belum dikonfigurasi (isi API_URL)';
+  statusEl.style.color = '#b42318';
+  return;
+ }
+ statusEl.textContent = 'Menghubungkan…';
+ statusEl.style.color = '#64748b';
+
+ callAppsScript({}).then(res => {
+  if(res && res.ok){
+   statusEl.textContent = 'Terhubung (' + (res.status || 'OK') + ')';
+   statusEl.style.color = '#16834a';
+  } else {
+   statusEl.textContent = 'Respons tidak sesuai';
+   statusEl.style.color = '#b42318';
+  }
+ }).catch(err => {
+  statusEl.textContent = 'Gagal terhubung: ' + (err && err.message ? err.message : 'Error');
+  statusEl.style.color = '#b42318';
+ });
+}
+
+window.addEventListener('load', () => {
+ document.getElementById('mode').value = params.get('mode') === 'souvenir' ? 'souvenir' : 'checkin';
+ changeMode();
+ bindNumberSanitizers();
+ checkApiConnection();
+ if(window.isSecureContext && window.Html5Qrcode){
+  refreshCameras();
+ }
+});
+</script>
+</body>
+</html>

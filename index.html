@@ -6,7 +6,20 @@
 <title>Guest Management</title>
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
-:root{--navy:#17365D;--green:#16834a;--red:#b42318;--bg:#f3f6fa}
+:root{
+  --navy:#17365D;
+  --green:#16834a;
+  --red:#b42318;
+  --bg:#f3f6fa;
+  --souv-bg:#eff6ff;
+  --souv-bd:#60a5fa;
+  --souv-fg:#1e3a8a;
+  --souv-pill-bg:#dbeafe;
+  --school-bg:#fef3c7;
+  --school-bd:#f59e0b;
+  --school-fg:#92400e;
+  --school-pill-bg:#fde68a;
+}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:#172033;font-family:Arial,sans-serif}
 header{background:var(--navy);color:white;padding:18px 16px}
@@ -27,21 +40,9 @@ button.secondary{background:#e8eef6;color:var(--navy)}
 #result.info{display:block;background:#eff6ff;border:1px solid #93c5fd;color:#1e3a8a}
 #result h2{margin:0 0 7px;font-size:18px}
 #result p{margin:6px 0;font-size:14px;overflow-wrap:anywhere}
-.inv-badge{display:inline-block;background:var(--navy);color:#ffffff;font-size:15px;font-weight:bold;padding:6px 12px;border-radius:8px;margin:4px 0 8px;letter-spacing:.5px}
-
-.info-stack{display:flex;flex-direction:column;gap:8px;margin:8px 0 12px}
-.box-primary{background:#17365D;color:#ffffff;border-radius:10px;padding:11px 14px;font-size:16px;font-weight:bold;line-height:1.35;letter-spacing:.2px;box-shadow:0 2px 6px rgba(23,54,93,.18)}
-.grid-two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.grid-three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.box-qty-adult{background:#15803d;color:#ffffff;border-radius:9px;padding:10px 8px;font-size:13px;font-weight:bold;line-height:1.35;text-align:center;box-shadow:0 1px 4px rgba(21,128,61,.18)}
-.box-qty-child{background:#be185d;color:#ffffff;border-radius:9px;padding:10px 8px;font-size:13px;font-weight:bold;line-height:1.35;text-align:center;box-shadow:0 1px 4px rgba(190,24,93,.18)}
-.box-qty-nanny{background:#4338ca;color:#ffffff;border-radius:9px;padding:10px 8px;font-size:13px;font-weight:bold;line-height:1.35;text-align:center;box-shadow:0 1px 4px rgba(67,56,202,.18)}
-.box-souv-main{background:#0f766e;color:#ffffff;border-radius:10px;padding:12px 14px;font-size:15px;font-weight:bold;line-height:1.35;text-align:center;box-shadow:0 2px 6px rgba(15,118,110,.2)}
-.box-souv-school{background:#c2410c;color:#ffffff;border-radius:10px;padding:12px 14px;font-size:15px;font-weight:bold;line-height:1.35;text-align:center;box-shadow:0 2px 6px rgba(194,65,12,.2)}
-
+.inv-badge{display:inline-block;background:var(--navy);color:#ffffff;font-size:16px;font-weight:bold;padding:6px 12px;border-radius:8px;margin:4px 0 8px;letter-spacing:.5px}
 .mode{display:inline-block;border-radius:99px;background:#e8eef6;color:var(--navy);padding:6px 10px;font-size:12px;font-weight:bold}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .api{font-size:11px;color:#64748b;overflow-wrap:anywhere}
 .actual-box{background:#fff;border:1px solid #9ad3ae;padding:12px;border-radius:8px;margin-top:10px}
 .actual-box.locked-box{border-color:#d97706;box-shadow:0 0 0 2px #fef3c7}
@@ -52,6 +53,143 @@ button.secondary{background:#e8eef6;color:var(--navy)}
 .check-row input[type="checkbox"]{width:20px;height:20px;accent-color:var(--green);margin:0;cursor:pointer;flex-shrink:0}
 .check-row span{font-size:14px;font-weight:bold;color:#14532d}
 .summary-pill{background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:8px 10px;font-size:13px;color:#1e293b;margin-top:8px}
+
+/* Highlight detail tamu saat check-in berhasil */
+.checkin-highlight-card{
+  background:#ffffff;
+  border:2px solid #16a34a;
+  border-radius:10px;
+  padding:12px;
+  margin-top:8px;
+  box-shadow:0 2px 6px rgba(22,163,74,.12);
+}
+.highlight-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:6px;
+}
+.hl-item{
+  background:#f0fdf4;
+  border:1px solid #86efac;
+  border-radius:8px;
+  padding:8px 10px;
+}
+.hl-item.full-span{grid-column:1 / -1}
+.hl-item.table-hl{
+  background:#fef9c3;
+  border-color:#eab308;
+}
+.hl-label{
+  display:block;
+  font-size:11px;
+  font-weight:bold;
+  text-transform:uppercase;
+  letter-spacing:.3px;
+  color:#15803d;
+  margin-bottom:2px;
+}
+.hl-item.table-hl .hl-label{color:#854d0e}
+.hl-val{
+  font-size:15px;
+  font-weight:bold;
+  color:#0f172a;
+  overflow-wrap:anywhere;
+}
+.hl-item.table-hl .hl-val{
+  font-size:17px;
+  color:#713f12;
+}
+.undangan-highlight{
+  background:#ecfdf5;
+  border:1.5px solid #16a34a;
+  border-radius:8px;
+  padding:10px 12px;
+  margin-top:8px;
+  color:#14532d;
+}
+.undangan-highlight .uh-title{
+  font-size:12px;
+  font-weight:bold;
+  text-transform:uppercase;
+  color:#15803d;
+  margin-bottom:6px;
+}
+.undangan-badges{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.ubadge{
+  display:inline-block;
+  padding:5px 9px;
+  border-radius:7px;
+  font-size:12px;
+  font-weight:bold;
+}
+.ubadge.guest-b{background:#dcfce7;border:1px solid #86efac;color:#14532d}
+.ubadge.souv-b{background:var(--souv-pill-bg);border:1px solid var(--souv-bd);color:var(--souv-fg)}
+.ubadge.school-b{background:var(--school-pill-bg);border:1px solid var(--school-bd);color:var(--school-fg)}
+
+/* Warna pembeda Souvenir vs Souvenir Teman Sekolah */
+.souvenir-split{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:8px;
+}
+.souv-card-regular{
+  background:var(--souv-bg);
+  border:2px solid var(--souv-bd);
+  border-radius:10px;
+  padding:10px;
+  color:var(--souv-fg);
+}
+.souv-card-regular .souv-tag{
+  display:inline-block;
+  background:var(--souv-pill-bg);
+  border:1px solid var(--souv-bd);
+  color:var(--souv-fg);
+  font-size:11px;
+  font-weight:bold;
+  padding:2px 7px;
+  border-radius:99px;
+  margin-bottom:4px;
+}
+.souv-card-regular .souv-qty{
+  font-size:18px;
+  font-weight:bold;
+  color:#1e3a8a;
+}
+
+.souv-card-school{
+  background:var(--school-bg);
+  border:2px solid var(--school-bd);
+  border-radius:10px;
+  padding:10px;
+  color:var(--school-fg);
+}
+.souv-card-school .souv-tag{
+  display:inline-block;
+  background:var(--school-pill-bg);
+  border:1px solid var(--school-bd);
+  color:var(--school-fg);
+  font-size:11px;
+  font-weight:bold;
+  padding:2px 7px;
+  border-radius:99px;
+  margin-bottom:4px;
+}
+.souv-card-school .souv-qty{
+  font-size:18px;
+  font-weight:bold;
+  color:#78350f;
+}
+
+.field-lbl-souv{color:var(--souv-fg) !important}
+.field-lbl-school{color:var(--school-fg) !important}
+.input-souv{border-color:var(--souv-bd) !important;background:var(--souv-bg) !important;color:var(--souv-fg) !important;font-weight:bold}
+.input-school{border-color:var(--school-bd) !important;background:var(--school-bg) !important;color:var(--school-fg) !important;font-weight:bold}
 </style>
 </head>
 <body>
@@ -79,8 +217,8 @@ button.secondary{background:#e8eef6;color:var(--navy)}
 <div id="reader"></div>
 <p class="hint" id="cameraHint">Izinkan akses kamera. Gunakan Chrome dan tautan HTTPS.</p>
 <div class="row">
-<button id="btnStartScan" onclick="startScanner()">Mulai kamera</button>
-<button id="btnStopScan" class="secondary" onclick="stopScanner()">Hentikan</button>
+<button onclick="startScanner()">Mulai kamera</button>
+<button class="secondary" onclick="stopScanner()">Hentikan</button>
 </div>
 <label>Input kode secara manual (opsional)</label>
 <input id="manualCode" placeholder="Tempel / ketik ID QR" onkeydown="if(event.key==='Enter'){event.preventDefault();manualSubmit();}">
@@ -95,50 +233,29 @@ button.secondary{background:#e8eef6;color:var(--navy)}
 </section>
 </main>
 
+<iframe id="apiBridgeFrame" src="about:blank" style="display:none;width:0;height:0;border:0;"></iframe>
+
 <script>
+// Ganti dengan URL Web App deployment Google Apps Script Anda (berakhiran /exec)
 const API_URL = 'https://script.google.com/macros/s/AKfycbyo0iCqvaG5-sSa_SuF_tRdKVK1M4WlZujG-VNs9uizXnDuYw9DqsZzGzScQTI74nVt2A/exec';
 
 let scanner = null;
 let busy = false;
-let scanLock = false; // Mengunci scanner agar tidak membaca ulang otomatis setelah 1 scan sukses
 let pendingConfirmRequired = false;
-let lastProcessedCode = '';
-let lastProcessedAt = 0;
+let lastScanAt = 0;
 let cameras = [];
+let bridgeReady = false;
+const pendingBridgeCalls = new Map();
 const params = new URLSearchParams(location.search);
 
 function toNonNegNumber(val, fallback = 0){
- if(val === undefined || val === null || String(val).trim() === '') return fallback;
- const n = parseInt(String(val).replace(/[^\d-]/g, ''), 10);
+ const n = parseInt(String(val ?? '').replace(/[^\d-]/g, ''), 10);
  if(isNaN(n) || n < 0) return fallback;
  return n;
 }
 
-function pickFirstValue(obj, keys, fallback = ''){
- if(!obj || typeof obj !== 'object') return fallback;
- for(const k of keys){
-  if(obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== ''){
-   return obj[k];
-  }
- }
- const normMap = {};
- Object.keys(obj).forEach(key => {
-  const norm = String(key).toLowerCase().replace(/[^a-z0-9]/g, '');
-  normMap[norm] = obj[key];
- });
- for(const k of keys){
-  const norm = String(k).toLowerCase().replace(/[^a-z0-9]/g, '');
-  if(normMap[norm] !== undefined && normMap[norm] !== null && String(normMap[norm]).trim() !== ''){
-   return normMap[norm];
-  }
- }
- return fallback;
-}
-
 function bindNumberSanitizers(){
  document.querySelectorAll('input[type="number"]').forEach(inp => {
-  if(inp.dataset.sanitizedBound) return;
-  inp.dataset.sanitizedBound = '1';
   inp.addEventListener('input', () => {
    if(inp.value === '') return;
    const n = parseInt(inp.value, 10);
@@ -156,6 +273,49 @@ function isValidApiUrl(url){
 
 function getBaseExecUrl(){
  return String(API_URL || '').trim().split('?')[0];
+}
+
+function initApiBridge(){
+ const frame = document.getElementById('apiBridgeFrame');
+ if(!frame || !isValidApiUrl(API_URL)) return;
+ const sep = getBaseExecUrl().indexOf('?') >= 0 ? '&' : '?';
+ frame.src = getBaseExecUrl() + sep + 'mode=bridge&_=' + Date.now();
+}
+
+window.addEventListener('message', function(ev){
+ const msg = ev && ev.data ? ev.data : {};
+ if(msg.type === 'GNI_BRIDGE_READY'){
+  bridgeReady = true;
+  return;
+ }
+ if(msg.type === 'GNI_API_RES' && msg.reqId && pendingBridgeCalls.has(msg.reqId)){
+  const cb = pendingBridgeCalls.get(msg.reqId);
+  pendingBridgeCalls.delete(msg.reqId);
+  clearTimeout(cb.timer);
+  if(msg.ok){
+   cb.resolve(msg.data);
+  } else {
+   cb.reject(new Error(msg.error || 'Bridge error'));
+  }
+ }
+});
+
+function callViaBridge(payload){
+ return new Promise((resolve, reject) => {
+  const frame = document.getElementById('apiBridgeFrame');
+  if(!frame || !frame.contentWindow){
+   reject(new Error('Bridge iframe tidak tersedia'));
+   return;
+  }
+  const reqId = 'req_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+  const timer = setTimeout(() => {
+   pendingBridgeCalls.delete(reqId);
+   reject(new Error('Bridge timeout'));
+  }, 15000);
+
+  pendingBridgeCalls.set(reqId, { resolve, reject, timer });
+  frame.contentWindow.postMessage({ type: 'GNI_API_REQ', reqId, payload }, '*');
+ });
 }
 
 function currentMode(){
@@ -199,21 +359,40 @@ function showResult(kind, title, detail){
  b.className = kind;
  b.innerHTML = '<h2>' + esc(title) + '</h2>' + detail;
  bindNumberSanitizers();
- b.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+ b.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-async function lockAndStopScanner(){
- scanLock = true;
+function pauseScannerSafe(){
  try{
   if(scanner && typeof scanner.getState === 'function'){
-   const st = scanner.getState();
-   if(st === 2 || st === 3){
-    await scanner.stop();
+   if(scanner.getState() === 2){
+    scanner.pause(true);
    }
   } else if(scanner && scanner.isScanning){
-   await scanner.stop();
+   scanner.pause(true);
   }
  }catch(e){}
+}
+
+function resumeScannerSafe(){
+ try{
+  if(scanner && typeof scanner.getState === 'function'){
+   if(scanner.getState() === 3){
+    scanner.resume();
+    return;
+   }
+   if(scanner.getState() === 2){
+    return;
+   }
+  }
+  if(scanner && scanner.isScanning){
+   scanner.resume();
+  } else {
+   startScanner();
+  }
+ }catch(e){
+  startScanner();
+ }
 }
 
 function parseApiTextResponse_(txt){
@@ -230,7 +409,7 @@ function runJsonpFallback(payload, resolve, reject, lastErr){
 
  const timer = setTimeout(() => {
   finish(new Error('Timeout (' + (lastErr || 'JSONP') + ')'));
- }, 10000);
+ }, 25000);
 
  function finish(err, data){
   if(finished) return;
@@ -264,47 +443,58 @@ function callAppsScript(payload){
    return;
   }
 
-  const query = new URLSearchParams({
-   ...payload,
-   _: Date.now().toString()
-  });
-  const targetUrl = getBaseExecUrl() + '?' + query.toString();
-
-  if(typeof fetch === 'function'){
-   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-   const fetchTimer = setTimeout(() => {
-    if(controller) controller.abort();
-   }, 8000);
-
-   fetch(targetUrl, {
-    method: 'GET',
-    redirect: 'follow',
-    cache: 'no-store',
-    signal: controller ? controller.signal : undefined
-   })
-   .then(r => {
-    clearTimeout(fetchTimer);
-    if(!r.ok) throw new Error('HTTP ' + r.status);
-    return r.text();
-   })
-   .then(txt => {
-    resolve(parseApiTextResponse_(txt));
-   })
-   .catch(err => {
-    clearTimeout(fetchTimer);
-    runJsonpFallback(payload, resolve, reject, err && err.message ? err.message : 'Fetch gagal');
+  const tryDirectOrJsonp = (prevErr) => {
+   const query = new URLSearchParams({
+    ...payload,
+    _: Date.now().toString()
    });
+   const targetUrl = getBaseExecUrl() + '?' + query.toString();
+
+   if(typeof fetch === 'function'){
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const fetchTimer = setTimeout(() => {
+     if(controller) controller.abort();
+    }, 15000);
+
+    fetch(targetUrl, {
+     method: 'GET',
+     redirect: 'follow',
+     cache: 'no-store',
+     signal: controller ? controller.signal : undefined
+    })
+    .then(r => {
+     clearTimeout(fetchTimer);
+     if(!r.ok) throw new Error('HTTP ' + r.status);
+     return r.text();
+    })
+    .then(txt => {
+     resolve(parseApiTextResponse_(txt));
+    })
+    .catch(err => {
+     clearTimeout(fetchTimer);
+     runJsonpFallback(payload, resolve, reject, prevErr || (err && err.message ? err.message : 'Fetch gagal'));
+    });
+    return;
+   }
+
+   runJsonpFallback(payload, resolve, reject, prevErr || 'Fetch tidak tersedia');
+  };
+
+  if(bridgeReady){
+   callViaBridge(payload)
+    .then(resolve)
+    .catch(err => tryDirectOrJsonp(err && err.message ? err.message : 'Bridge gagal'));
    return;
   }
 
-  runJsonpFallback(payload, resolve, reject, 'Fetch tidak tersedia');
+  tryDirectOrJsonp('');
  });
 }
 
 function normalizeQrCode(value){
  let code = String(value ?? '').normalize('NFKC')
   .replace(/[\u200B-\u200D\uFEFF]/g, '')
-  .replace(/\s+/g, '')
+  .replace(/[\u0000-\u001F\u007F]/g, '')
   .trim();
 
  if(/^https?:\/\//i.test(code)){
@@ -314,7 +504,7 @@ function normalizeQrCode(value){
    if(fromUrl) code = fromUrl.trim();
   }catch(e){}
  }
- return code.toUpperCase();
+ return code;
 }
 
 function toggleCheckinForm(){
@@ -331,65 +521,12 @@ function toggleSouvenirForm(){
  form.style.display = chk.checked ? 'none' : 'block';
 }
 
-function buildGuestBadgesHtml(g, fallbackCode, res){
- const src = (g && typeof g === 'object') ? g : {};
- const root = (res && typeof res === 'object') ? res : {};
- const qrId = pickFirstValue(src, ['idQr', 'qrId', 'id_qr', 'idQR', 'id', 'code'], pickFirstValue(root, ['idQr', 'qrId', 'id_qr'], fallbackCode || '-'));
- const invNo = pickFirstValue(src, ['invitationNumber', 'noUndangan', 'nomorUndangan', 'invNo', 'invitation_number'], '-');
- const tableNo = pickFirstValue(src, ['tableNumber', 'noMeja', 'nomorMeja', 'table', 'table_number'], '-');
- const guestName = pickFirstValue(src, ['name', 'nama', 'guestName', 'namaTamu'], '-');
- const phone = pickFirstValue(src, ['phone', 'noTelepon', 'telepon', 'hp', 'noHp', 'whatsapp'], '-');
- const category = pickFirstValue(src, ['category', 'kategori'], '-');
- const adults = toNonNegNumber(pickFirstValue(src, ['adults', 'dewasa', 'qtyDewasa', 'qty_dewasa'], 0), 0);
- const children = toNonNegNumber(pickFirstValue(src, ['children', 'anak', 'qtyAnak', 'qty_anak'], 0), 0);
- const nannies = toNonNegNumber(pickFirstValue(src, ['nannies', 'suster', 'qtySuster', 'qty_suster'], 0), 0);
- const qtySouvenir = toNonNegNumber(pickFirstValue(src, ['qtySouvenir', 'souvenir', 'qty_souvenir'], 0), 0);
- const qtySouvenirSchoolRaw = pickFirstValue(
-  src,
-  [
-   'qtySouvenirTemanSekolah',
-   'qtySouvenirSchool',
-   'souvenirTemanSekolah',
-   'souvenirSchool',
-   'qty_souvenir_teman_sekolah',
-   'qty_souvenir_school',
-   'temanSekolah'
-  ],
-  pickFirstValue(root, ['qtySouvenirTemanSekolah', 'qtySouvenirSchool', 'souvenirTemanSekolah'], 0)
- );
- const qtySouvenirSchool = toNonNegNumber(qtySouvenirSchoolRaw, 0);
-
- return `
-  <div class="info-stack">
-   <div class="box-primary">ID QR: ${esc(qrId)}</div>
-   <div class="box-primary">No. Undangan: ${esc(invNo)}</div>
-   <div class="box-primary">No. Meja: ${esc(tableNo)}</div>
-   <div class="box-primary">Nama: ${esc(guestName)}</div>
-   <div class="box-primary">No. Telepon: ${esc(phone)}</div>
-   <div class="box-primary">Kategori: ${esc(category)}</div>
-
-   <div class="grid-three">
-    <div class="box-qty-adult">Qty Dewasa: ${esc(adults)}</div>
-    <div class="box-qty-child">Qty Anak: ${esc(children)}</div>
-    <div class="box-qty-nanny">Qty Suster: ${esc(nannies)}</div>
-   </div>
-
-   <div class="grid-two">
-    <div class="box-souv-main">Qty Souvenir: ${esc(qtySouvenir)}</div>
-    <div class="box-souv-school">Qty Souvenir Teman Sekolah: ${esc(qtySouvenirSchool)}</div>
-   </div>
-  </div>
- `;
-}
-
-async function processCode(rawCode, overrideData = null){
+function processCode(rawCode, overrideData = null){
  const code = normalizeQrCode(rawCode);
- const isUpdate = Boolean(overrideData && overrideData.isUpdate);
-
  if(busy) return;
 
- if(pendingConfirmRequired && !isUpdate){
-  await lockAndStopScanner();
+ if(pendingConfirmRequired && !(overrideData && overrideData.isUpdate)){
+  pauseScannerSafe();
   showResult(
    'bad',
    'Wajib Simpan Konfirmasi Kehadiran',
@@ -405,7 +542,7 @@ async function processCode(rawCode, overrideData = null){
 
  const operator = document.getElementById('operator').value.trim();
  if(!operator){
-  await lockAndStopScanner();
+  pauseScannerSafe();
   showResult(
    'bad',
    'Isi nama resepsionis',
@@ -415,21 +552,11 @@ async function processCode(rawCode, overrideData = null){
   return;
  }
 
- // Cegah pemindaian otomatis untuk kode yang sama dalam 6 detik
- const now = Date.now();
- if(!isUpdate && code === lastProcessedCode && (now - lastProcessedAt) < 6000){
-  return;
- }
-
  busy = true;
- if(!isUpdate){
-  lastProcessedCode = code;
-  lastProcessedAt = now;
-  await lockAndStopScanner();
- }
-
+ pauseScannerSafe();
  showResult('info', 'Memproses QR…', '<p>Kode: <b>' + esc(code) + '</b> sedang dikirim ke server.</p>');
 
+ const isUpdate = Boolean(overrideData && overrideData.isUpdate);
  const payload = {
   action: 'scan',
   code,
@@ -444,7 +571,7 @@ async function processCode(rawCode, overrideData = null){
   if(overrideData.children !== undefined) payload.children = String(toNonNegNumber(overrideData.children, 0));
   if(overrideData.nannies !== undefined) payload.nannies = String(toNonNegNumber(overrideData.nannies, 0));
   if(overrideData.qtySouvenir !== undefined) payload.qtySouvenir = String(toNonNegNumber(overrideData.qtySouvenir, 0));
-  if(overrideData.qtySouvenirTemanSekolah !== undefined) payload.qtySouvenirTemanSekolah = String(toNonNegNumber(overrideData.qtySouvenirTemanSekolah, 0));
+  if(overrideData.qtySouvenirSchool !== undefined) payload.qtySouvenirSchool = String(toNonNegNumber(overrideData.qtySouvenirSchool, 0));
   if(overrideData.penukar !== undefined) payload.penukar = overrideData.penukar;
   if(overrideData.angpao !== undefined && currentMode() === 'checkin') payload.angpao = String(toNonNegNumber(overrideData.angpao, 0));
   if(overrideData.hadiah !== undefined && currentMode() === 'checkin') payload.hadiah = String(toNonNegNumber(overrideData.hadiah, 0));
@@ -454,40 +581,74 @@ async function processCode(rawCode, overrideData = null){
   const g = res.guest || {};
   let d = '';
 
-  const alreadyCheckedIn = Boolean(
-   res.alreadyCheckedIn || res.alreadyCheckin || res.isDuplicate ||
-   /sudah.*check[\s-]*in/i.test(String(res.message || '') + ' ' + String(res.status || ''))
-  );
-  const isInitialCheckinSuccess = Boolean(g.name && currentMode() === 'checkin' && res.ok && !isUpdate && !alreadyCheckedIn);
+  const isInitialCheckinSuccess = Boolean(g.name && currentMode() === 'checkin' && res.ok && !isUpdate);
   if(isInitialCheckinSuccess){
    pendingConfirmRequired = true;
-  } else if((isUpdate || alreadyCheckedIn) && res.ok){
+  } else if(isUpdate && res.ok){
    pendingConfirmRequired = false;
   }
 
-  if(currentMode() === 'checkin' && (g.name || g.invitationNumber || g.idQr || g.qrId)){
-   d += buildGuestBadgesHtml(g, code, res);
-  } else {
-   if(g.invitationNumber){
-    d += '<div class="inv-badge">Nomor Undangan: ' + esc(g.invitationNumber) + '</div>';
-   }
-   if(g.name) d += '<p><b>Nama tamu:</b> ' + esc(g.name) + '</p>';
-   if(g.phone) d += '<p><b>No. telepon:</b> ' + esc(g.phone) + '</p>';
-   if(g.category) d += '<p><b>Kategori:</b> ' + esc(g.category) + '</p>';
+  if(g.invitationNumber){
+   d += '<div class="inv-badge">Nomor Undangan: ' + esc(g.invitationNumber) + '</div>';
   }
 
+  const adultsVal = toNonNegNumber(g.adults, 0);
+  const childrenVal = toNonNegNumber(g.children, 0);
+  const nanniesVal = toNonNegNumber(g.nannies, 0);
+  const souvVal = toNonNegNumber(g.qtySouvenir, 0);
+  const souvSchoolVal = toNonNegNumber(g.qtySouvenirSchool, 0);
+  const tableDisplay = (g.tableNo && String(g.tableNo).trim() !== '') ? String(g.tableNo).trim() : '-';
+
   if(isInitialCheckinSuccess){
+   // Highlight Nama, No. Telepon, Kategori, No Meja dan Data Undangan saat Check-in berhasil
    d += `
+    <div class="checkin-highlight-card">
+      <div class="highlight-grid">
+        <div class="hl-item full-span">
+          <span class="hl-label">Nama Tamu</span>
+          <div class="hl-val">${esc(g.name)}</div>
+        </div>
+        <div class="hl-item">
+          <span class="hl-label">No. Telepon</span>
+          <div class="hl-val">${esc(g.phone || '-')}</div>
+        </div>
+        <div class="hl-item">
+          <span class="hl-label">Kategori</span>
+          <div class="hl-val">${esc(g.category || '-')}</div>
+        </div>
+        <div class="hl-item table-hl full-span">
+          <span class="hl-label">Nomor Meja</span>
+          <div class="hl-val">Meja ${esc(tableDisplay)}</div>
+        </div>
+      </div>
+      <div class="undangan-highlight">
+        <div class="uh-title">Data Undangan</div>
+        <div class="undangan-badges">
+          <span class="ubadge guest-b">Dewasa: ${esc(adultsVal)}</span>
+          <span class="ubadge guest-b">Anak: ${esc(childrenVal)}</span>
+          <span class="ubadge guest-b">Suster: ${esc(nanniesVal)}</span>
+          <span class="ubadge souv-b">Souvenir: ${esc(souvVal)}</span>
+          <span class="ubadge school-b">Souvenir Teman Sekolah: ${esc(souvSchoolVal)}</span>
+        </div>
+      </div>
+    </div>
+
     <label class="check-row" for="chkSesuai">
       <input type="checkbox" id="chkSesuai" checked onchange="toggleCheckinForm()">
       <span>Data kehadiran sesuai undangan (Otomatis masuk ke sheet Guest_Checkin)</span>
     </label>
     <div id="checkinActualForm" class="actual-box" style="display:none;">
       <b>Input Jumlah Kehadiran Aktual (Tidak Sesuai):</b>
-      <div class="row-3">
-        <div><label>Dewasa</label><input type="number" id="actAdults" min="0" step="1" value="${esc(toNonNegNumber(g.adults, 0))}"></div>
-        <div><label>Anak</label><input type="number" id="actChildren" min="0" step="1" value="${esc(toNonNegNumber(g.children, 0))}"></div>
-        <div><label>Suster</label><input type="number" id="actNannies" min="0" step="1" value="${esc(toNonNegNumber(g.nannies, 0))}"></div>
+      <div class="row">
+        <div><label>Dewasa</label><input type="number" id="actAdults" min="0" step="1" value="${esc(adultsVal)}"></div>
+        <div><label>Anak</label><input type="number" id="actChildren" min="0" step="1" value="${esc(childrenVal)}"></div>
+      </div>
+      <div class="row">
+        <div><label>Suster</label><input type="number" id="actNannies" min="0" step="1" value="${esc(nanniesVal)}"></div>
+        <div><label class="field-lbl-souv">Souvenir</label><input type="number" class="input-souv" id="actSouvenir" min="0" step="1" value="${esc(souvVal)}"></div>
+      </div>
+      <div class="row">
+        <div class="full-span" style="grid-column:1 / -1;"><label class="field-lbl-school">Qty Souvenir Teman Sekolah</label><input type="number" class="input-school" id="actSouvenirSchool" min="0" step="1" value="${esc(souvSchoolVal)}"></div>
       </div>
     </div>
     <div class="actual-box locked-box" style="margin-top:10px;">
@@ -497,29 +658,51 @@ async function processCode(rawCode, overrideData = null){
         <div><label>Hadiah</label><input type="number" id="giftHadiah" min="0" step="1" value="0"></div>
       </div>
       <button id="btnSaveCheckinConfirm" onclick="saveCheckin('${esc(code)}')" style="background:var(--green); margin-top:12px;">Simpan Konfirmasi Kehadiran</button>
-      <div class="lock-note">Kamera dikunci &amp; tombol "Scan Tamu Berikutnya" aktif setelah "Simpan Konfirmasi Kehadiran" ditekan.</div>
+      <div class="lock-note">Tombol "Scan Tamu Berikutnya" terkunci sampai "Simpan Konfirmasi Kehadiran" ditekan.</div>
     </div>
    `;
+  } else {
+   if(g.name) d += '<p><b>Nama tamu:</b> ' + esc(g.name) + '</p>';
+   if(g.phone) d += '<p><b>No. telepon:</b> ' + esc(g.phone) + '</p>';
+   if(g.category) d += '<p><b>Kategori:</b> ' + esc(g.category) + '</p>';
+   if(g.tableNo !== undefined && g.name) d += '<p><b>Nomor meja:</b> ' + esc(tableDisplay) + '</p>';
   }
 
-  if(g.name && currentMode() === 'souvenir' && res.ok && !isUpdate){
+  if(g.name && currentMode() === 'souvenir' && res.ok){
    d += `
     <div class="summary-pill">
-      <b>Jatah Souvenir:</b> <b>${esc(toNonNegNumber(g.qtySouvenir, 0))}</b> pcs (a.n. ${esc(g.name)}${g.invitationNumber ? ' • No. Undangan: ' + esc(g.invitationNumber) : ''})
+      <b>Penukaran Souvenir</b> a.n. <b>${esc(g.name)}</b>${g.invitationNumber ? ' • No. Undangan: ' + esc(g.invitationNumber) : ''} • No. Meja: <b>${esc(tableDisplay)}</b>
     </div>
-    <label class="check-row" for="chkSouvSesuai">
-      <input type="checkbox" id="chkSouvSesuai" checked onchange="toggleSouvenirForm()">
-      <span>Pengambilan souvenir sesuai</span>
-    </label>
-    <div id="souvActualForm" class="actual-box" style="display:none;">
-      <b>Input Detail Penukaran Aktual (Tidak Sesuai / Diwakilkan):</b>
-      <label>Nama Penukar</label>
-      <input type="text" id="actPenukar" value="${esc(g.name)}" placeholder="Nama pengambil">
-      <label>Jumlah Souvenir</label>
-      <input type="number" id="actSouvQty" min="0" step="1" value="${esc(toNonNegNumber(g.qtySouvenir, 0))}">
-      <button id="btnSaveSouvConfirm" onclick="saveSouvenir('${esc(code)}')" style="background:var(--green); margin-top:8px; padding:10px;">Simpan Konfirmasi Kehadiran</button>
+    <div class="souvenir-split">
+      <div class="souv-card-regular">
+        <span class="souv-tag">Souvenir</span>
+        <div class="souv-qty">${esc(souvVal)} pcs</div>
+      </div>
+      <div class="souv-card-school">
+        <span class="souv-tag">Souvenir Teman Sekolah</span>
+        <div class="souv-qty">${esc(souvSchoolVal)} pcs</div>
+      </div>
     </div>
    `;
+
+   if(!isUpdate){
+    d += `
+     <label class="check-row" for="chkSouvSesuai">
+       <input type="checkbox" id="chkSouvSesuai" checked onchange="toggleSouvenirForm()">
+       <span>Pengambilan souvenir sesuai</span>
+     </label>
+     <div id="souvActualForm" class="actual-box" style="display:none;">
+       <b>Input Detail Penukaran Aktual (Tidak Sesuai / Diwakilkan):</b>
+       <label>Nama Penukar</label>
+       <input type="text" id="actPenukar" value="${esc(g.name)}" placeholder="Nama pengambil">
+       <div class="row">
+         <div><label class="field-lbl-souv">Qty Souvenir</label><input type="number" class="input-souv" id="actSouvQty" min="0" step="1" value="${esc(souvVal)}"></div>
+         <div><label class="field-lbl-school">Qty Souvenir Teman Sekolah</label><input type="number" class="input-school" id="actSouvSchoolQty" min="0" step="1" value="${esc(souvSchoolVal)}"></div>
+       </div>
+       <button onclick="saveSouvenir('${esc(code)}')" style="background:var(--green); margin-top:10px; padding:10px;">Simpan Konfirmasi Penukaran</button>
+     </div>
+    `;
+   }
   }
 
   d += '<p><b>Waktu server:</b> ' + esc(res.timestamp || '') + '</p>';
@@ -529,13 +712,10 @@ async function processCode(rawCode, overrideData = null){
    d += '<button id="btnNextGuest" onclick="resumeScanner()" style="background:var(--green); margin-top:14px;">🔄 Scan Tamu Berikutnya</button>';
   }
 
-  const resultTitle = alreadyCheckedIn
-   ? (res.status || 'SUDAH CHECK-IN SEBELUMNYA')
-   : (res.ok ? 'BERHASIL' : (res.status || 'GAGAL'));
-  const resultKind = alreadyCheckedIn ? 'info' : (res.ok ? 'good' : 'bad');
-  showResult(resultKind, resultTitle, d || '<p>Respons server kosong.</p>');
+  showResult(res.ok ? 'good' : 'bad', res.ok ? 'BERHASIL' : (res.status || 'GAGAL'), d || '<p>Respons server kosong.</p>');
   document.getElementById('manualCode').value = '';
-  busy = false;
+  busy = pendingConfirmRequired;
+  lastScanAt = Date.now();
  }).catch(err => {
   showResult(
    'bad',
@@ -543,11 +723,11 @@ async function processCode(rawCode, overrideData = null){
    '<p>' + esc(err.message || err) + '</p><button onclick="resumeScanner()" style="background:var(--red); margin-top:14px;">Coba Lagi</button>'
   );
   busy = false;
+  lastScanAt = Date.now();
  });
 }
 
 function saveCheckin(code){
- if(busy) return;
  const btn = document.getElementById('btnSaveCheckinConfirm');
  if(btn) btn.disabled = true;
  const chk = document.getElementById('chkSesuai');
@@ -555,30 +735,31 @@ function saveCheckin(code){
  const adults = isSesuai ? undefined : (document.getElementById('actAdults') ? toNonNegNumber(document.getElementById('actAdults').value, 0) : undefined);
  const children = isSesuai ? undefined : (document.getElementById('actChildren') ? toNonNegNumber(document.getElementById('actChildren').value, 0) : undefined);
  const nannies = isSesuai ? undefined : (document.getElementById('actNannies') ? toNonNegNumber(document.getElementById('actNannies').value, 0) : undefined);
+ const qtySouvenir = isSesuai ? undefined : (document.getElementById('actSouvenir') ? toNonNegNumber(document.getElementById('actSouvenir').value, 0) : undefined);
+ const qtySouvenirSchool = isSesuai ? undefined : (document.getElementById('actSouvenirSchool') ? toNonNegNumber(document.getElementById('actSouvenirSchool').value, 0) : undefined);
  const angpao = document.getElementById('giftAngpao') ? toNonNegNumber(document.getElementById('giftAngpao').value, 0) : 0;
  const hadiah = document.getElementById('giftHadiah') ? toNonNegNumber(document.getElementById('giftHadiah').value, 0) : 0;
- processCode(code, { adults, children, nannies, angpao, hadiah, isUpdate: true });
+ busy = false;
+ processCode(code, { adults, children, nannies, qtySouvenir, qtySouvenirSchool, angpao, hadiah, isUpdate: true });
 }
 
 function saveSouvenir(code){
- if(busy) return;
- const btn = document.getElementById('btnSaveSouvConfirm');
- if(btn) btn.disabled = true;
  const penukar = document.getElementById('actPenukar').value;
  const qtySouvenir = toNonNegNumber(document.getElementById('actSouvQty').value, 0);
- processCode(code, { penukar, qtySouvenir, isUpdate: true });
+ const qtySouvenirSchool = toNonNegNumber(document.getElementById('actSouvSchoolQty').value, 0);
+ busy = false;
+ processCode(code, { penukar, qtySouvenir, qtySouvenirSchool, isUpdate: true });
 }
 
 function onScanSuccess(decoded){
- if(busy || scanLock || pendingConfirmRequired) return;
  const code = normalizeQrCode(decoded);
- if(!code) return;
  const now = Date.now();
- if(code === lastProcessedCode && (now - lastProcessedAt) < 6000) return;
+ if(busy || pendingConfirmRequired || !code) return;
+ if(now - lastScanAt < 1200) return;
  processCode(code);
 }
 
-async function resumeScanner(){
+function resumeScanner(){
  if(pendingConfirmRequired){
   showResult(
    'bad',
@@ -588,16 +769,16 @@ async function resumeScanner(){
   return;
  }
  busy = false;
- scanLock = false;
- lastProcessedCode = '';
- lastProcessedAt = 0;
  showResult('', '', '');
- await startScanner();
+ lastScanAt = 0;
+ resumeScannerSafe();
 }
 
 async function refreshCameras(){
  try{
-  if(!window.Html5Qrcode) return;
+  if(!navigator.mediaDevices?.getUserMedia) return;
+  const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+  stream.getTracks().forEach(t => t.stop());
   cameras = await Html5Qrcode.getCameras();
   const sel = document.getElementById('cameraSelect');
   sel.innerHTML = '';
@@ -628,14 +809,12 @@ async function startScanner(){
  try{
   if(!scanner) scanner = new Html5Qrcode('reader');
   if(typeof scanner.getState === 'function' && scanner.getState() === 2){
-   scanLock = false;
    return;
   }
-  scanLock = false;
   const id = document.getElementById('cameraSelect').value;
   await scanner.start(
    id || { facingMode: 'environment' },
-   { fps: 15, qrbox: { width: 240, height: 240 } },
+   { fps: 20, qrbox: { width: 240, height: 240 } },
    onScanSuccess,
    () => {}
   );
@@ -646,7 +825,6 @@ async function startScanner(){
 }
 
 async function stopScanner(){
- scanLock = true;
  try{
   if(scanner && typeof scanner.getState === 'function'){
    if(scanner.getState() === 2 || scanner.getState() === 3){
@@ -656,7 +834,6 @@ async function stopScanner(){
    await scanner.stop();
   }
  }catch(e){}
- document.getElementById('cameraHint').textContent = 'Kamera dihentikan. Klik "Mulai kamera" atau "Scan Tamu Berikutnya" untuk memindai.';
 }
 
 function manualSubmit(){
@@ -704,7 +881,8 @@ window.addEventListener('load', () => {
  document.getElementById('mode').value = params.get('mode') === 'souvenir' ? 'souvenir' : 'checkin';
  changeMode();
  bindNumberSanitizers();
- checkApiConnection();
+ initApiBridge();
+ setTimeout(checkApiConnection, 400);
  if(window.isSecureContext && window.Html5Qrcode){
   refreshCameras();
  }

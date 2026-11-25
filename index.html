@@ -54,6 +54,27 @@ button.secondary{background:#e8eef6;color:var(--navy)}
 .check-row span{font-size:14px;font-weight:bold;color:#14532d}
 .summary-pill{background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:8px 10px;font-size:13px;color:#1e293b;margin-top:8px}
 
+/* Blokir duplikasi check-in */
+.dup-block-banner{
+  background:#fef2f2;
+  border:2px solid #dc2626;
+  border-radius:10px;
+  padding:12px;
+  margin-top:8px;
+  color:#7f1d1d;
+}
+.dup-block-title{
+  font-size:14px;
+  font-weight:bold;
+  color:#b91c1c;
+  margin-bottom:6px;
+}
+.dup-meta{
+  font-size:13px;
+  margin:4px 0;
+  color:#450a0a;
+}
+
 /* Highlight detail tamu saat check-in berhasil */
 .checkin-highlight-card{
   background:#ffffff;
@@ -76,6 +97,10 @@ button.secondary{background:#e8eef6;color:var(--navy)}
   padding:8px 10px;
 }
 .hl-item.full-span{grid-column:1 / -1}
+.hl-item.id-sub{
+  background:#f8fafc;
+  border-color:#cbd5e1;
+}
 .hl-item.table-hl{
   background:#fef9c3;
   border-color:#eab308;
@@ -89,12 +114,18 @@ button.secondary{background:#e8eef6;color:var(--navy)}
   color:#15803d;
   margin-bottom:2px;
 }
+.hl-item.id-sub .hl-label{color:#334155}
 .hl-item.table-hl .hl-label{color:#854d0e}
 .hl-val{
   font-size:15px;
   font-weight:bold;
   color:#0f172a;
   overflow-wrap:anywhere;
+}
+.hl-item.id-sub .hl-val{
+  font-size:13px;
+  font-family:monospace;
+  color:#1e293b;
 }
 .hl-item.table-hl .hl-val{
   font-size:17px;
@@ -246,6 +277,7 @@ let lastScanAt = 0;
 let cameras = [];
 let bridgeReady = false;
 const pendingBridgeCalls = new Map();
+const checkedInSessionIds = new Set();
 const params = new URLSearchParams(location.search);
 
 function toNonNegNumber(val, fallback = 0){
@@ -507,6 +539,18 @@ function normalizeQrCode(value){
  return code;
 }
 
+function getGuestTableNo(g){
+ if(!g || typeof g !== 'object') return '';
+ const raw = g.tableNo ?? g.nomorMeja ?? g.nomor_meja ?? g.table ?? g.meja ?? '';
+ return String(raw ?? '').trim();
+}
+
+function getGuestIdQr(g, fallbackCode = ''){
+ if(!g || typeof g !== 'object') return String(fallbackCode || '').trim();
+ const raw = g.id ?? g.id_qr ?? g.ID_QR ?? g.code ?? fallbackCode ?? '';
+ return String(raw ?? '').trim();
+}
+
 function toggleCheckinForm(){
  const chk = document.getElementById('chkSesuai');
  const form = document.getElementById('checkinActualForm');
@@ -552,15 +596,37 @@ function processCode(rawCode, overrideData = null){
   return;
  }
 
+ const isUpdate = Boolean(overrideData && overrideData.isUpdate);
+ const modeNow = currentMode();
+
+ // Blokir cepat di sisi client jika kode sudah check-in pada sesi ini & bukan update konfirmasi
+ if(modeNow === 'checkin' && !isUpdate && checkedInSessionIds.has(code.toUpperCase())){
+  busy = true;
+  pauseScannerSafe();
+  showResult(
+   'bad',
+   'DIBLOKIR • SUDAH CHECK-IN SEBELUMNYA',
+   '<div class="dup-block-banner">' +
+     '<div class="dup-block-title">⛔ Scan Check-In Ditolak (Duplikat)</div>' +
+     '<div class="dup-meta"><b>ID_QR:</b> ' + esc(code) + '</div>' +
+     '<div class="dup-meta">Tamu dengan ID QR ini sudah melakukan check-in sebelumnya.</div>' +
+   '</div>' +
+   '<button id="btnNextGuest" onclick="resumeScanner()" style="background:var(--red); margin-top:14px;">🔄 Scan Tamu Berikutnya</button>'
+  );
+  document.getElementById('manualCode').value = '';
+  busy = false;
+  lastScanAt = Date.now();
+  return;
+ }
+
  busy = true;
  pauseScannerSafe();
  showResult('info', 'Memproses QR…', '<p>Kode: <b>' + esc(code) + '</b> sedang dikirim ke server.</p>');
 
- const isUpdate = Boolean(overrideData && overrideData.isUpdate);
  const payload = {
   action: 'scan',
   code,
-  mode: currentMode(),
+  mode: modeNow,
   operator,
   userAgent: navigator.userAgent,
   isUpdate: isUpdate ? 'true' : 'false'
@@ -573,18 +639,41 @@ function processCode(rawCode, overrideData = null){
   if(overrideData.qtySouvenir !== undefined) payload.qtySouvenir = String(toNonNegNumber(overrideData.qtySouvenir, 0));
   if(overrideData.qtySouvenirSchool !== undefined) payload.qtySouvenirSchool = String(toNonNegNumber(overrideData.qtySouvenirSchool, 0));
   if(overrideData.penukar !== undefined) payload.penukar = overrideData.penukar;
-  if(overrideData.angpao !== undefined && currentMode() === 'checkin') payload.angpao = String(toNonNegNumber(overrideData.angpao, 0));
-  if(overrideData.hadiah !== undefined && currentMode() === 'checkin') payload.hadiah = String(toNonNegNumber(overrideData.hadiah, 0));
+  if(overrideData.angpao !== undefined && modeNow === 'checkin') payload.angpao = String(toNonNegNumber(overrideData.angpao, 0));
+  if(overrideData.hadiah !== undefined && modeNow === 'checkin') payload.hadiah = String(toNonNegNumber(overrideData.hadiah, 0));
  }
 
  callAppsScript(payload).then(res => {
   const g = res.guest || {};
   let d = '';
 
-  const isInitialCheckinSuccess = Boolean(g.name && currentMode() === 'checkin' && res.ok && !isUpdate);
+  const statusText = String(res.status || '').trim();
+  const msgText = String(res.message || '').trim();
+  const combinedStatus = (statusText + ' ' + msgText + ' ' + String(g.checkinStatus || '')).toLowerCase();
+
+  const isAlreadyCheckedIn = Boolean(
+   modeNow === 'checkin' &&
+   !isUpdate &&
+   (
+    /sudah\s*check-?in/i.test(statusText + ' ' + msgText) ||
+    (!res.ok && (Boolean(g.checkinTime) || combinedStatus.includes('sudah check-in') || combinedStatus.includes('sudah checkin')))
+   )
+  );
+
+  // Paksa blokir jika terdeteksi sudah check-in sebelumnya
+  const effectiveOk = isAlreadyCheckedIn ? false : Boolean(res.ok);
+
+  const idQrDisplay = getGuestIdQr(g, code);
+  if(isAlreadyCheckedIn && idQrDisplay){
+   checkedInSessionIds.add(idQrDisplay.toUpperCase());
+  }
+
+  const isInitialCheckinSuccess = Boolean(g.name && modeNow === 'checkin' && effectiveOk && !isUpdate);
   if(isInitialCheckinSuccess){
    pendingConfirmRequired = true;
-  } else if(isUpdate && res.ok){
+  } else if(isUpdate && effectiveOk){
+   pendingConfirmRequired = false;
+  } else if(isAlreadyCheckedIn){
    pendingConfirmRequired = false;
   }
 
@@ -597,16 +686,33 @@ function processCode(rawCode, overrideData = null){
   const nanniesVal = toNonNegNumber(g.nannies, 0);
   const souvVal = toNonNegNumber(g.qtySouvenir, 0);
   const souvSchoolVal = toNonNegNumber(g.qtySouvenirSchool, 0);
-  const tableDisplay = (g.tableNo && String(g.tableNo).trim() !== '') ? String(g.tableNo).trim() : '-';
+  const rawTable = getGuestTableNo(g);
+  const tableDisplay = rawTable !== '' ? rawTable : '-';
 
-  if(isInitialCheckinSuccess){
-   // Highlight Nama, No. Telepon, Kategori, No Meja dan Data Undangan saat Check-in berhasil
+  if(isAlreadyCheckedIn){
+   d += `
+    <div class="dup-block-banner">
+      <div class="dup-block-title">⛔ DIBLOKIR: TAMU SUDAH CHECK-IN SEBELUMNYA</div>
+      <div class="dup-meta"><b>ID_QR:</b> ${esc(idQrDisplay)}</div>
+      ${g.name ? `<div class="dup-meta"><b>Nama Tamu:</b> ${esc(g.name)}</div>` : ''}
+      ${g.category ? `<div class="dup-meta"><b>Kategori:</b> ${esc(g.category)}</div>` : ''}
+      <div class="dup-meta"><b>Nomor Meja:</b> ${esc(tableDisplay)}</div>
+      ${g.checkinTime ? `<div class="dup-meta"><b>Waktu Check-in Awal:</b> ${esc(String(g.checkinTime))}</div>` : ''}
+      ${g.checkinOperator ? `<div class="dup-meta"><b>Petugas Check-in Awal:</b> ${esc(String(g.checkinOperator))}</div>` : ''}
+    </div>
+   `;
+  } else if(isInitialCheckinSuccess){
+   // Highlight Nama, ID_QR di bawah Nama Tamu, No. Telepon, Kategori, No Meja dan Data Undangan saat Check-in berhasil
    d += `
     <div class="checkin-highlight-card">
       <div class="highlight-grid">
         <div class="hl-item full-span">
           <span class="hl-label">Nama Tamu</span>
           <div class="hl-val">${esc(g.name)}</div>
+        </div>
+        <div class="hl-item id-sub full-span">
+          <span class="hl-label">ID_QR</span>
+          <div class="hl-val">${esc(idQrDisplay)}</div>
         </div>
         <div class="hl-item">
           <span class="hl-label">No. Telepon</span>
@@ -618,7 +724,7 @@ function processCode(rawCode, overrideData = null){
         </div>
         <div class="hl-item table-hl full-span">
           <span class="hl-label">Nomor Meja</span>
-          <div class="hl-val">Meja ${esc(tableDisplay)}</div>
+          <div class="hl-val">${esc(tableDisplay)}</div>
         </div>
       </div>
       <div class="undangan-highlight">
@@ -663,12 +769,13 @@ function processCode(rawCode, overrideData = null){
    `;
   } else {
    if(g.name) d += '<p><b>Nama tamu:</b> ' + esc(g.name) + '</p>';
+   if(idQrDisplay) d += '<p><b>ID_QR:</b> ' + esc(idQrDisplay) + '</p>';
    if(g.phone) d += '<p><b>No. telepon:</b> ' + esc(g.phone) + '</p>';
    if(g.category) d += '<p><b>Kategori:</b> ' + esc(g.category) + '</p>';
-   if(g.tableNo !== undefined && g.name) d += '<p><b>Nomor meja:</b> ' + esc(tableDisplay) + '</p>';
+   if(g.name) d += '<p><b>Nomor meja:</b> ' + esc(tableDisplay) + '</p>';
   }
 
-  if(g.name && currentMode() === 'souvenir' && res.ok){
+  if(g.name && modeNow === 'souvenir' && effectiveOk){
    d += `
     <div class="summary-pill">
       <b>Penukaran Souvenir</b> a.n. <b>${esc(g.name)}</b>${g.invitationNumber ? ' • No. Undangan: ' + esc(g.invitationNumber) : ''} • No. Meja: <b>${esc(tableDisplay)}</b>
@@ -706,13 +813,21 @@ function processCode(rawCode, overrideData = null){
   }
 
   d += '<p><b>Waktu server:</b> ' + esc(res.timestamp || '') + '</p>';
-  if(res.message) d += '<p>' + esc(res.message) + '</p>';
+  const displayMsg = isAlreadyCheckedIn
+   ? (msgText || statusText || 'Sudah check-in sebelumnya')
+   : msgText;
+  if(displayMsg) d += '<p>' + esc(displayMsg) + '</p>';
 
   if(!pendingConfirmRequired){
-   d += '<button id="btnNextGuest" onclick="resumeScanner()" style="background:var(--green); margin-top:14px;">🔄 Scan Tamu Berikutnya</button>';
+   const nextBtnColor = isAlreadyCheckedIn ? 'var(--red)' : 'var(--green)';
+   d += '<button id="btnNextGuest" onclick="resumeScanner()" style="background:' + nextBtnColor + '; margin-top:14px;">🔄 Scan Tamu Berikutnya</button>';
   }
 
-  showResult(res.ok ? 'good' : 'bad', res.ok ? 'BERHASIL' : (res.status || 'GAGAL'), d || '<p>Respons server kosong.</p>');
+  const headingTitle = effectiveOk
+   ? 'BERHASIL'
+   : (isAlreadyCheckedIn ? 'SUDAH CHECK-IN (DIBLOKIR)' : (statusText || 'GAGAL'));
+
+  showResult(effectiveOk ? 'good' : 'bad', headingTitle, d || '<p>Respons server kosong.</p>');
   document.getElementById('manualCode').value = '';
   busy = pendingConfirmRequired;
   lastScanAt = Date.now();
@@ -739,6 +854,7 @@ function saveCheckin(code){
  const qtySouvenirSchool = isSesuai ? undefined : (document.getElementById('actSouvenirSchool') ? toNonNegNumber(document.getElementById('actSouvenirSchool').value, 0) : undefined);
  const angpao = document.getElementById('giftAngpao') ? toNonNegNumber(document.getElementById('giftAngpao').value, 0) : 0;
  const hadiah = document.getElementById('giftHadiah') ? toNonNegNumber(document.getElementById('giftHadiah').value, 0) : 0;
+ checkedInSessionIds.add(normalizeQrCode(code).toUpperCase());
  busy = false;
  processCode(code, { adults, children, nannies, qtySouvenir, qtySouvenirSchool, angpao, hadiah, isUpdate: true });
 }

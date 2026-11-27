@@ -54,25 +54,25 @@ button.secondary{background:#e8eef6;color:var(--navy)}
 .check-row span{font-size:14px;font-weight:bold;color:#14532d}
 .summary-pill{background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:8px 10px;font-size:13px;color:#1e293b;margin-top:8px}
 
-/* Blokir duplikasi check-in */
-.dup-block-banner{
-  background:#fef2f2;
-  border:2px solid #dc2626;
+/* Banner info scan ulang check-in */
+.dup-info-banner{
+  background:#fffbeb;
+  border:2px solid #f59e0b;
   border-radius:10px;
   padding:12px;
   margin-top:8px;
-  color:#7f1d1d;
+  color:#78350f;
 }
-.dup-block-title{
+.dup-info-title{
   font-size:14px;
   font-weight:bold;
-  color:#b91c1c;
+  color:#b45309;
   margin-bottom:6px;
 }
 .dup-meta{
   font-size:13px;
   margin:4px 0;
-  color:#450a0a;
+  color:#451a03;
 }
 
 /* Highlight detail tamu saat check-in berhasil */
@@ -316,7 +316,6 @@ let lastScanAt = 0;
 let cameras = [];
 let bridgeReady = false;
 const pendingBridgeCalls = new Map();
-const checkedInSessionIds = new Set();
 const params = new URLSearchParams(location.search);
 
 function toNonNegNumber(val, fallback = 0){
@@ -604,6 +603,17 @@ function toggleSouvenirForm(){
  form.style.display = chk.checked ? 'none' : 'block';
 }
 
+function toggleDuplicateEditForm(){
+ const form = document.getElementById('dupEditForm');
+ const btn = document.getElementById('btnToggleDupEdit');
+ if(!form) return;
+ const isHidden = form.style.display === 'none' || !form.style.display;
+ form.style.display = isHidden ? 'block' : 'none';
+ if(btn){
+  btn.textContent = isHidden ? 'Tutup Form Ubah Data Kehadiran' : 'Ingin merubah data kehadiran ?';
+ }
+}
+
 function processCode(rawCode, overrideData = null){
  const code = normalizeQrCode(rawCode);
  if(busy) return;
@@ -638,25 +648,6 @@ function processCode(rawCode, overrideData = null){
  const isUpdate = Boolean(overrideData && overrideData.isUpdate);
  const modeNow = currentMode();
 
- if(modeNow === 'checkin' && !isUpdate && checkedInSessionIds.has(code.toUpperCase())){
-  busy = true;
-  pauseScannerSafe();
-  showResult(
-   'bad',
-   'DIBLOKIR • SUDAH CHECK-IN SEBELUMNYA',
-   '<div class="dup-block-banner">' +
-     '<div class="dup-block-title">⛔ Scan Check-In Ditolak (Duplikat)</div>' +
-     '<div class="dup-meta"><b>ID_QR:</b> ' + esc(code) + '</div>' +
-     '<div class="dup-meta">Tamu dengan ID QR ini sudah melakukan check-in sebelumnya.</div>' +
-   '</div>' +
-   '<button id="btnNextGuest" onclick="resumeScanner()" style="background:var(--red); margin-top:14px;">🔄 Scan Tamu Berikutnya</button>'
-  );
-  document.getElementById('manualCode').value = '';
-  busy = false;
-  lastScanAt = Date.now();
-  return;
- }
-
  busy = true;
  pauseScannerSafe();
  showResult('info', 'Memproses QR…', '<p>Kode: <b>' + esc(code) + '</b> sedang dikirim ke server.</p>');
@@ -680,6 +671,7 @@ function processCode(rawCode, overrideData = null){
   if(overrideData.angpao !== undefined && modeNow === 'checkin') payload.angpao = String(toNonNegNumber(overrideData.angpao, 0));
   if(overrideData.hadiah !== undefined && modeNow === 'checkin') payload.hadiah = String(toNonNegNumber(overrideData.hadiah, 0));
   if(overrideData.catatanGift !== undefined && modeNow === 'checkin') payload.catatanGift = String(overrideData.catatanGift || '');
+  if(overrideData.isDuplicateEdit) payload.isDuplicateEdit = 'true';
  }
 
  callAppsScript(payload).then(res => {
@@ -700,11 +692,7 @@ function processCode(rawCode, overrideData = null){
   );
 
   const effectiveOk = isAlreadyCheckedIn ? false : Boolean(res.ok);
-
   const idQrDisplay = getGuestIdQr(g, code);
-  if(isAlreadyCheckedIn && idQrDisplay){
-   checkedInSessionIds.add(idQrDisplay.toUpperCase());
-  }
 
   const isInitialCheckinSuccess = Boolean(g.name && modeNow === 'checkin' && effectiveOk && !isUpdate);
   if(isInitialCheckinSuccess){
@@ -724,19 +712,45 @@ function processCode(rawCode, overrideData = null){
   const nanniesVal = toNonNegNumber(g.nannies, 0);
   const souvVal = toNonNegNumber(g.qtySouvenir, 0);
   const souvSchoolVal = toNonNegNumber(g.qtySouvenirSchool, 0);
+  const angpaoVal = toNonNegNumber(g.angpao, 0);
+  const hadiahVal = toNonNegNumber(g.hadiah, 0);
+  const catatanGiftVal = String(g.catatanGift ?? '').trim();
   const rawTable = getGuestTableNo(g);
   const tableDisplay = rawTable !== '' ? rawTable : '-';
 
   if(isAlreadyCheckedIn){
    d += `
-    <div class="dup-block-banner">
-      <div class="dup-block-title">⛔ DIBLOKIR: TAMU SUDAH CHECK-IN SEBELUMNYA</div>
+    <div class="dup-info-banner">
+      <div class="dup-info-title">⚠️ Tamu Sudah Check-In Sebelumnya</div>
       <div class="dup-meta"><b>ID_QR:</b> ${esc(idQrDisplay)}</div>
       ${g.name ? `<div class="dup-meta"><b>Nama Tamu:</b> ${esc(g.name)}</div>` : ''}
       ${g.category ? `<div class="dup-meta"><b>Kategori:</b> ${esc(g.category)}</div>` : ''}
       <div class="dup-meta"><b>Nomor Meja:</b> ${esc(tableDisplay)}</div>
       ${g.checkinTime ? `<div class="dup-meta"><b>Waktu Check-in Awal:</b> ${esc(String(g.checkinTime))}</div>` : ''}
       ${g.checkinOperator ? `<div class="dup-meta"><b>Petugas Check-in Awal:</b> ${esc(String(g.checkinOperator))}</div>` : ''}
+      <div class="dup-meta" style="margin-top:6px;">
+        <b>Data Tercatat:</b> Dewasa: ${esc(adultsVal)}, Anak: ${esc(childrenVal)}, Suster: ${esc(nanniesVal)} | Angpao: ${esc(angpaoVal)}, Hadiah: ${esc(hadiahVal)}${catatanGiftVal ? ` | Catatan: ${esc(catatanGiftVal)}` : ''}
+      </div>
+    </div>
+
+    <button type="button" id="btnToggleDupEdit" class="secondary" onclick="toggleDuplicateEditForm()" style="margin-top:12px;">Ingin merubah data kehadiran ?</button>
+
+    <div id="dupEditForm" class="actual-box" style="display:none; margin-top:10px; border-color:#f59e0b;">
+      <b>Ubah Data Kehadiran &amp; Angpao / Hadiah (Guest_Checkin):</b>
+      <div class="guest-3-grid" style="margin-top:8px;">
+        <div><label>Dewasa</label><input type="number" id="dupAdults" min="0" step="1" value="${esc(adultsVal)}"></div>
+        <div><label>Anak</label><input type="number" id="dupChildren" min="0" step="1" value="${esc(childrenVal)}"></div>
+        <div><label>Suster</label><input type="number" id="dupNannies" min="0" step="1" value="${esc(nanniesVal)}"></div>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <div><label>Angpao</label><input type="number" id="dupAngpao" min="0" step="1" value="${esc(angpaoVal)}"></div>
+        <div><label>Hadiah</label><input type="number" id="dupHadiah" min="0" step="1" value="${esc(hadiahVal)}"></div>
+      </div>
+      <div style="margin-top:8px;">
+        <label for="dupCatatan">Catatan Angpao &amp; Hadiah</label>
+        <input type="text" id="dupCatatan" value="${esc(catatanGiftVal)}" placeholder="Contoh: Angpao amplop merah / Kado mainan balok" autocomplete="off">
+      </div>
+      <button type="button" id="btnSaveDupEdit" onclick="saveDuplicateCheckinEdit('${esc(code)}')" style="background:var(--green); margin-top:12px;">Simpan Perubahan Data Kehadiran</button>
     </div>
    `;
   } else if(isInitialCheckinSuccess){
@@ -872,15 +886,16 @@ function processCode(rawCode, overrideData = null){
   if(displayMsg) d += '<p>' + esc(displayMsg) + '</p>';
 
   if(!pendingConfirmRequired){
-   const nextBtnColor = isAlreadyCheckedIn ? 'var(--red)' : 'var(--green)';
+   const nextBtnColor = isAlreadyCheckedIn ? 'var(--navy)' : 'var(--green)';
    d += '<button id="btnNextGuest" onclick="resumeScanner()" style="background:' + nextBtnColor + '; margin-top:14px;">🔄 Scan Tamu Berikutnya</button>';
   }
 
   const headingTitle = effectiveOk
    ? 'BERHASIL'
-   : (isAlreadyCheckedIn ? 'SUDAH CHECK-IN (DIBLOKIR)' : (statusText || 'GAGAL'));
+   : (isAlreadyCheckedIn ? 'SUDAH CHECK-IN' : (statusText || 'GAGAL'));
 
-  showResult(effectiveOk ? 'good' : 'bad', headingTitle, d || '<p>Respons server kosong.</p>');
+  const resultKind = effectiveOk ? 'good' : (isAlreadyCheckedIn ? 'info' : 'bad');
+  showResult(resultKind, headingTitle, d || '<p>Respons server kosong.</p>');
   document.getElementById('manualCode').value = '';
   busy = pendingConfirmRequired;
   lastScanAt = Date.now();
@@ -906,9 +921,30 @@ function saveCheckin(code){
  const angpao = document.getElementById('giftAngpao') ? toNonNegNumber(document.getElementById('giftAngpao').value, 0) : 0;
  const hadiah = document.getElementById('giftHadiah') ? toNonNegNumber(document.getElementById('giftHadiah').value, 0) : 0;
  const catatanGift = document.getElementById('giftCatatan') ? document.getElementById('giftCatatan').value.trim() : '';
- checkedInSessionIds.add(normalizeQrCode(code).toUpperCase());
  busy = false;
  processCode(code, { adults, children, nannies, angpao, hadiah, catatanGift, isUpdate: true });
+}
+
+function saveDuplicateCheckinEdit(code){
+ const btn = document.getElementById('btnSaveDupEdit');
+ if(btn) btn.disabled = true;
+ const adults = document.getElementById('dupAdults') ? toNonNegNumber(document.getElementById('dupAdults').value, 0) : 0;
+ const children = document.getElementById('dupChildren') ? toNonNegNumber(document.getElementById('dupChildren').value, 0) : 0;
+ const nannies = document.getElementById('dupNannies') ? toNonNegNumber(document.getElementById('dupNannies').value, 0) : 0;
+ const angpao = document.getElementById('dupAngpao') ? toNonNegNumber(document.getElementById('dupAngpao').value, 0) : 0;
+ const hadiah = document.getElementById('dupHadiah') ? toNonNegNumber(document.getElementById('dupHadiah').value, 0) : 0;
+ const catatanGift = document.getElementById('dupCatatan') ? document.getElementById('dupCatatan').value.trim() : '';
+ busy = false;
+ processCode(code, {
+  adults,
+  children,
+  nannies,
+  angpao,
+  hadiah,
+  catatanGift,
+  isUpdate: true,
+  isDuplicateEdit: true
+ });
 }
 
 function saveSouvenir(code){

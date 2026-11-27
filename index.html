@@ -638,7 +638,6 @@ function processCode(rawCode, overrideData = null){
  const isUpdate = Boolean(overrideData && overrideData.isUpdate);
  const modeNow = currentMode();
 
- // Blokir cepat di sisi client jika kode sudah check-in pada sesi ini & bukan update konfirmasi
  if(modeNow === 'checkin' && !isUpdate && checkedInSessionIds.has(code.toUpperCase())){
   busy = true;
   pauseScannerSafe();
@@ -680,6 +679,7 @@ function processCode(rawCode, overrideData = null){
   if(overrideData.penukar !== undefined) payload.penukar = overrideData.penukar;
   if(overrideData.angpao !== undefined && modeNow === 'checkin') payload.angpao = String(toNonNegNumber(overrideData.angpao, 0));
   if(overrideData.hadiah !== undefined && modeNow === 'checkin') payload.hadiah = String(toNonNegNumber(overrideData.hadiah, 0));
+  if(overrideData.catatanGift !== undefined && modeNow === 'checkin') payload.catatanGift = String(overrideData.catatanGift || '');
  }
 
  callAppsScript(payload).then(res => {
@@ -699,7 +699,6 @@ function processCode(rawCode, overrideData = null){
    )
   );
 
-  // Paksa blokir jika terdeteksi sudah check-in sebelumnya
   const effectiveOk = isAlreadyCheckedIn ? false : Boolean(res.ok);
 
   const idQrDisplay = getGuestIdQr(g, code);
@@ -741,7 +740,6 @@ function processCode(rawCode, overrideData = null){
     </div>
    `;
   } else if(isInitialCheckinSuccess){
-   // Di bawah Nomor Meja: Dewasa, Anak, Suster (3 grid), menyusul di bawahnya Souvenir & Souvenir Teman Sekolah (2 grid)
    d += `
     <div class="checkin-highlight-card">
       <div class="highlight-grid">
@@ -813,6 +811,10 @@ function processCode(rawCode, overrideData = null){
       <div class="row">
         <div><label>Angpao</label><input type="number" id="giftAngpao" min="0" step="1" value="0"></div>
         <div><label>Hadiah</label><input type="number" id="giftHadiah" min="0" step="1" value="0"></div>
+      </div>
+      <div style="margin-top:8px;">
+        <label for="giftCatatan">Catatan Angpao &amp; Hadiah</label>
+        <input type="text" id="giftCatatan" placeholder="Contoh: Angpao amplop merah / Kado mainan balok" autocomplete="off">
       </div>
       <button id="btnSaveCheckinConfirm" onclick="saveCheckin('${esc(code)}')" style="background:var(--green); margin-top:12px;">Simpan Konfirmasi Kehadiran</button>
       <div class="lock-note">Tombol "Scan Tamu Berikutnya" terkunci sampai "Simpan Konfirmasi Kehadiran" ditekan.</div>
@@ -903,9 +905,10 @@ function saveCheckin(code){
  const nannies = isSesuai ? undefined : (document.getElementById('actNannies') ? toNonNegNumber(document.getElementById('actNannies').value, 0) : undefined);
  const angpao = document.getElementById('giftAngpao') ? toNonNegNumber(document.getElementById('giftAngpao').value, 0) : 0;
  const hadiah = document.getElementById('giftHadiah') ? toNonNegNumber(document.getElementById('giftHadiah').value, 0) : 0;
+ const catatanGift = document.getElementById('giftCatatan') ? document.getElementById('giftCatatan').value.trim() : '';
  checkedInSessionIds.add(normalizeQrCode(code).toUpperCase());
  busy = false;
- processCode(code, { adults, children, nannies, angpao, hadiah, isUpdate: true });
+ processCode(code, { adults, children, nannies, angpao, hadiah, catatanGift, isUpdate: true });
 }
 
 function saveSouvenir(code){

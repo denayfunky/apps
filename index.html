@@ -92,7 +92,7 @@ button.btn-dup-edit:hover{
   color:#7f1d1d;
 }
 
-/* Highlight detail tamu saat check-in berhasil */
+/* Highlight detail tamu saat check-in */
 .checkin-highlight-card{
   background:#ffffff;
   border:2px solid #16a34a;
@@ -329,6 +329,7 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbyo0iCqvaG5-sSa_SuF_tRd
 let scanner = null;
 let busy = false;
 let pendingConfirmRequired = false;
+let pendingSavePayload = null;
 let lastScanAt = 0;
 let cameras = [];
 let bridgeReady = false;
@@ -343,6 +344,8 @@ function toNonNegNumber(val, fallback = 0){
 
 function bindNumberSanitizers(){
  document.querySelectorAll('input[type="number"]').forEach(inp => {
+  if(inp.dataset.sanitized) return;
+  inp.dataset.sanitized = '1';
   inp.addEventListener('input', () => {
    if(inp.value === '') return;
    const n = parseInt(inp.value, 10);
@@ -398,7 +401,7 @@ function callViaBridge(payload){
   const timer = setTimeout(() => {
    pendingBridgeCalls.delete(reqId);
    reject(new Error('Bridge timeout'));
-  }, 15000);
+  }, 20000);
 
   pendingBridgeCalls.set(reqId, { resolve, reject, timer });
   frame.contentWindow.postMessage({ type: 'GNI_API_REQ', reqId, payload }, '*');
@@ -496,7 +499,7 @@ function runJsonpFallback(payload, resolve, reject, lastErr){
 
  const timer = setTimeout(() => {
   finish(new Error('Timeout (' + (lastErr || 'JSONP') + ')'));
- }, 25000);
+ }, 28000);
 
  function finish(err, data){
   if(finished) return;
@@ -541,7 +544,7 @@ function callAppsScript(payload){
     const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
     const fetchTimer = setTimeout(() => {
      if(controller) controller.abort();
-    }, 15000);
+    }, 18000);
 
     fetch(targetUrl, {
      method: 'GET',
@@ -631,6 +634,97 @@ function toggleDuplicateEditForm(){
  }
 }
 
+function renderCheckinFormMarkup(code, g, idQrDisplay, tableDisplay, adultsVal, childrenVal, nanniesVal, souvVal, souvSchoolVal, preset = null){
+ const angpaoInit = preset ? toNonNegNumber(preset.angpao, 0) : 0;
+ const hadiahInit = preset ? toNonNegNumber(preset.hadiah, 0) : 0;
+ const catatanInit = preset ? String(preset.catatanGift || '') : '';
+ const isNotSesuai = preset && preset.adults !== undefined;
+ const actAdultsInit = preset && preset.adults !== undefined ? toNonNegNumber(preset.adults, adultsVal) : adultsVal;
+ const actChildrenInit = preset && preset.children !== undefined ? toNonNegNumber(preset.children, childrenVal) : childrenVal;
+ const actNanniesInit = preset && preset.nannies !== undefined ? toNonNegNumber(preset.nannies, nanniesVal) : nanniesVal;
+
+ return `
+  <div class="checkin-highlight-card">
+    <div class="highlight-grid">
+      <div class="hl-item full-span">
+        <span class="hl-label">Nama Tamu</span>
+        <div class="hl-val">${esc(g.name)}</div>
+      </div>
+      <div class="hl-item id-sub full-span">
+        <span class="hl-label">ID_QR</span>
+        <div class="hl-val">${esc(idQrDisplay)}</div>
+      </div>
+      <div class="hl-item">
+        <span class="hl-label">No. Telepon</span>
+        <div class="hl-val">${esc(g.phone || '-')}</div>
+      </div>
+      <div class="hl-item">
+        <span class="hl-label">Kategori</span>
+        <div class="hl-val">${esc(g.category || '-')}</div>
+      </div>
+      <div class="hl-item table-hl full-span">
+        <span class="hl-label">Nomor Meja</span>
+        <div class="hl-val">${esc(tableDisplay)}</div>
+      </div>
+    </div>
+
+    <div class="undangan-highlight">
+      <div class="uh-title">Rincian Tamu &amp; Souvenir</div>
+      <div class="guest-3-grid">
+        <div class="gbox-item">
+          <span class="gbox-lbl">Dewasa</span>
+          <span class="gbox-val">${esc(adultsVal)}</span>
+        </div>
+        <div class="gbox-item">
+          <span class="gbox-lbl">Anak</span>
+          <span class="gbox-val">${esc(childrenVal)}</span>
+        </div>
+        <div class="gbox-item">
+          <span class="gbox-lbl">Suster</span>
+          <span class="gbox-val">${esc(nanniesVal)}</span>
+        </div>
+      </div>
+      <div class="souv-2-grid">
+        <div class="sbox-reg">
+          <span class="gbox-lbl">Souvenir</span>
+          <span class="gbox-val">${esc(souvVal)}</span>
+        </div>
+        <div class="sbox-sch">
+          <span class="gbox-lbl">Souvenir Teman Sekolah</span>
+          <span class="gbox-val">${esc(souvSchoolVal)}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <label class="check-row" for="chkSesuai">
+    <input type="checkbox" id="chkSesuai" ${isNotSesuai ? '' : 'checked'} onchange="toggleCheckinForm()">
+    <span>Data kehadiran sesuai undangan (Dicatat saat Simpan Konfirmasi Kehadiran)</span>
+  </label>
+  <div id="checkinActualForm" class="actual-box" style="display:${isNotSesuai ? 'block' : 'none'};">
+    <b>Input Jumlah Kehadiran Aktual (Tidak Sesuai):</b>
+    <div class="guest-3-grid" style="margin-top:8px;">
+      <div><label>Dewasa</label><input type="number" id="actAdults" min="0" step="1" value="${esc(actAdultsInit)}"></div>
+      <div><label>Anak</label><input type="number" id="actChildren" min="0" step="1" value="${esc(actChildrenInit)}"></div>
+      <div><label>Suster</label><input type="number" id="actNannies" min="0" step="1" value="${esc(actNanniesInit)}"></div>
+    </div>
+  </div>
+  <div class="actual-box locked-box" style="margin-top:10px;">
+    <b>Angpao &amp; Hadiah:</b>
+    <div class="row">
+      <div><label>Angpao</label><input type="number" id="giftAngpao" min="0" step="1" value="${esc(angpaoInit)}"></div>
+      <div><label>Hadiah</label><input type="number" id="giftHadiah" min="0" step="1" value="${esc(hadiahInit)}"></div>
+    </div>
+    <div style="margin-top:8px;">
+      <label for="giftCatatan">Catatan Angpao &amp; Hadiah</label>
+      <input type="text" id="giftCatatan" value="${esc(catatanInit)}" placeholder="Contoh: Angpao amplop merah / Kado mainan balok" autocomplete="off">
+    </div>
+    <button id="btnSaveCheckinConfirm" onclick="saveCheckin('${esc(code)}')" style="background:var(--green); margin-top:12px;">Simpan Konfirmasi Kehadiran</button>
+    <div class="lock-note">Waktu check-in, petugas, kehadiran, angpao, hadiah &amp; catatan dicatat saat "Simpan Konfirmasi Kehadiran" ditekan.</div>
+  </div>
+ `;
+}
+
 function processCode(rawCode, overrideData = null){
  const code = normalizeQrCode(rawCode);
  if(busy) return;
@@ -667,7 +761,11 @@ function processCode(rawCode, overrideData = null){
 
  busy = true;
  pauseScannerSafe();
- showResult('info', 'Memproses QR…', '<p>Kode: <b>' + esc(code) + '</b> sedang dikirim ke server.</p>');
+ showResult(
+  'info',
+  isUpdate ? 'Menyimpan Konfirmasi…' : 'Memproses QR…',
+  '<p>Kode: <b>' + esc(code) + '</b> sedang dikirim ke server.</p>'
+ );
 
  const payload = {
   action: 'scan',
@@ -691,6 +789,10 @@ function processCode(rawCode, overrideData = null){
   if(overrideData.isDuplicateEdit) payload.isDuplicateEdit = 'true';
  }
 
+ if(isUpdate){
+  pendingSavePayload = { code, overrideData };
+ }
+
  callAppsScript(payload).then(res => {
   const g = res.guest || {};
   let d = '';
@@ -711,13 +813,17 @@ function processCode(rawCode, overrideData = null){
   const effectiveOk = isAlreadyCheckedIn ? false : Boolean(res.ok);
   const idQrDisplay = getGuestIdQr(g, code);
 
-  const isInitialCheckinSuccess = Boolean(g.name && modeNow === 'checkin' && effectiveOk && !isUpdate);
-  if(isInitialCheckinSuccess){
+  // Pada scan awal mode check-in yang belum check-in (!isUpdate), form ditampilkan
+  // dan user wajib menekan "Simpan Konfirmasi Kehadiran" untuk menulis data check-in.
+  const isInitialCheckinForm = Boolean(g.name && modeNow === 'checkin' && effectiveOk && !isUpdate);
+  if(isInitialCheckinForm){
    pendingConfirmRequired = true;
   } else if(isUpdate && effectiveOk){
    pendingConfirmRequired = false;
+   pendingSavePayload = null;
   } else if(isAlreadyCheckedIn){
    pendingConfirmRequired = false;
+   pendingSavePayload = null;
   }
 
   if(g.invitationNumber){
@@ -770,87 +876,8 @@ function processCode(rawCode, overrideData = null){
       <button type="button" id="btnSaveDupEdit" onclick="saveDuplicateCheckinEdit('${esc(code)}')" style="background:var(--green); margin-top:12px;">Simpan Perubahan Data Kehadiran</button>
     </div>
    `;
-  } else if(isInitialCheckinSuccess){
-   d += `
-    <div class="checkin-highlight-card">
-      <div class="highlight-grid">
-        <div class="hl-item full-span">
-          <span class="hl-label">Nama Tamu</span>
-          <div class="hl-val">${esc(g.name)}</div>
-        </div>
-        <div class="hl-item id-sub full-span">
-          <span class="hl-label">ID_QR</span>
-          <div class="hl-val">${esc(idQrDisplay)}</div>
-        </div>
-        <div class="hl-item">
-          <span class="hl-label">No. Telepon</span>
-          <div class="hl-val">${esc(g.phone || '-')}</div>
-        </div>
-        <div class="hl-item">
-          <span class="hl-label">Kategori</span>
-          <div class="hl-val">${esc(g.category || '-')}</div>
-        </div>
-        <div class="hl-item table-hl full-span">
-          <span class="hl-label">Nomor Meja</span>
-          <div class="hl-val">${esc(tableDisplay)}</div>
-        </div>
-      </div>
-
-      <div class="undangan-highlight">
-        <div class="uh-title">Rincian Tamu &amp; Souvenir</div>
-        <div class="guest-3-grid">
-          <div class="gbox-item">
-            <span class="gbox-lbl">Dewasa</span>
-            <span class="gbox-val">${esc(adultsVal)}</span>
-          </div>
-          <div class="gbox-item">
-            <span class="gbox-lbl">Anak</span>
-            <span class="gbox-val">${esc(childrenVal)}</span>
-          </div>
-          <div class="gbox-item">
-            <span class="gbox-lbl">Suster</span>
-            <span class="gbox-val">${esc(nanniesVal)}</span>
-          </div>
-        </div>
-        <div class="souv-2-grid">
-          <div class="sbox-reg">
-            <span class="gbox-lbl">Souvenir</span>
-            <span class="gbox-val">${esc(souvVal)}</span>
-          </div>
-          <div class="sbox-sch">
-            <span class="gbox-lbl">Souvenir Teman Sekolah</span>
-            <span class="gbox-val">${esc(souvSchoolVal)}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <label class="check-row" for="chkSesuai">
-      <input type="checkbox" id="chkSesuai" checked onchange="toggleCheckinForm()">
-      <span>Data kehadiran sesuai undangan (Otomatis masuk ke sheet Guest_Checkin)</span>
-    </label>
-    <div id="checkinActualForm" class="actual-box" style="display:none;">
-      <b>Input Jumlah Kehadiran Aktual (Tidak Sesuai):</b>
-      <div class="guest-3-grid" style="margin-top:8px;">
-        <div><label>Dewasa</label><input type="number" id="actAdults" min="0" step="1" value="${esc(adultsVal)}"></div>
-        <div><label>Anak</label><input type="number" id="actChildren" min="0" step="1" value="${esc(childrenVal)}"></div>
-        <div><label>Suster</label><input type="number" id="actNannies" min="0" step="1" value="${esc(nanniesVal)}"></div>
-      </div>
-    </div>
-    <div class="actual-box locked-box" style="margin-top:10px;">
-      <b>Angpao &amp; Hadiah:</b>
-      <div class="row">
-        <div><label>Angpao</label><input type="number" id="giftAngpao" min="0" step="1" value="0"></div>
-        <div><label>Hadiah</label><input type="number" id="giftHadiah" min="0" step="1" value="0"></div>
-      </div>
-      <div style="margin-top:8px;">
-        <label for="giftCatatan">Catatan Angpao &amp; Hadiah</label>
-        <input type="text" id="giftCatatan" placeholder="Contoh: Angpao amplop merah / Kado mainan balok" autocomplete="off">
-      </div>
-      <button id="btnSaveCheckinConfirm" onclick="saveCheckin('${esc(code)}')" style="background:var(--green); margin-top:12px;">Simpan Konfirmasi Kehadiran</button>
-      <div class="lock-note">Tombol "Scan Tamu Berikutnya" terkunci sampai "Simpan Konfirmasi Kehadiran" ditekan.</div>
-    </div>
-   `;
+  } else if(isInitialCheckinForm){
+   d += renderCheckinFormMarkup(code, g, idQrDisplay, tableDisplay, adultsVal, childrenVal, nanniesVal, souvVal, souvSchoolVal, null);
   } else {
    if(g.name) d += '<p><b>Nama tamu:</b> ' + esc(g.name) + '</p>';
    if(idQrDisplay) d += '<p><b>ID_QR:</b> ' + esc(idQrDisplay) + '</p>';
@@ -908,7 +935,7 @@ function processCode(rawCode, overrideData = null){
   }
 
   const headingTitle = effectiveOk
-   ? 'BERHASIL'
+   ? (isInitialCheckinForm ? 'DATA TAMU DITEMUKAN' : 'BERHASIL')
    : (isAlreadyCheckedIn ? 'SUDAH CHECK-IN' : (statusText || 'GAGAL'));
 
   const resultKind = effectiveOk ? 'good' : (isAlreadyCheckedIn ? 'dup-red' : 'bad');
@@ -917,14 +944,32 @@ function processCode(rawCode, overrideData = null){
   busy = pendingConfirmRequired;
   lastScanAt = Date.now();
  }).catch(err => {
-  showResult(
-   'bad',
-   'Gagal menghubungi server',
-   '<p>' + esc(err.message || err) + '</p><button onclick="resumeScanner()" style="background:var(--red); margin-top:14px;">Coba Lagi</button>'
-  );
+  const errMsg = '<p>' + esc(err.message || err) + '</p>';
+  if(pendingSavePayload && pendingSavePayload.overrideData && pendingSavePayload.overrideData.isUpdate){
+   showResult(
+    'bad',
+    'Gagal Menyimpan (Cek Koneksi)',
+    errMsg +
+    '<p>Data isian Anda aman. Tekan tombol di bawah untuk mencoba menyimpan kembali tanpa scan ulang.</p>' +
+    '<button onclick="retryPendingSave()" style="background:var(--green); margin-top:12px;">Coba Simpan Ulang</button>'
+   );
+  } else {
+   showResult(
+    'bad',
+    'Gagal menghubungi server',
+    errMsg + '<button onclick="resumeScanner()" style="background:var(--red); margin-top:14px;">Coba Lagi</button>'
+   );
+  }
   busy = false;
   lastScanAt = Date.now();
  });
+}
+
+function retryPendingSave(){
+ if(!pendingSavePayload) return;
+ const { code, overrideData } = pendingSavePayload;
+ busy = false;
+ processCode(code, overrideData);
 }
 
 function saveCheckin(code){
@@ -990,6 +1035,7 @@ function resumeScanner(){
   return;
  }
  busy = false;
+ pendingSavePayload = null;
  showResult('', '', '');
  lastScanAt = 0;
  resumeScannerSafe();
